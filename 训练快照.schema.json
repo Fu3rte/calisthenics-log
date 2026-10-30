@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "街健训练快照",
+  "description": "训练进行中的临时记录，逐组追加，训练结束后由 scripts/training_log.py merge 转换为 训练日志.json 的正式记录。",
+  "type": "object",
+  "required": ["date", "status", "sets", "notes"],
+  "additionalProperties": false,
+  "properties": {
+    "date": {
+      "type": "string",
+      "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "训练日期，idle 状态为空串"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["idle", "recording", "done"],
+      "description": "idle 未开始；recording 记录中；done 已结束待转换"
+    },
+    "sets": {
+      "type": "array",
+      "description": "按完成顺序逐组追加，数组位置即组序",
+      "items": {
+        "type": "object",
+        "required": ["exercise", "reps", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "exercise": {
+            "type": "string",
+            "minLength": 1,
+            "description": "动作名称，如 引体向上 / 高位引体 / 双杠臂屈伸"
+          },
+          "reps": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "该组次数"
+          },
+          "note": {
+            "type": "string",
+            "description": "该组感受或细节，如 第8次起掉速、RIR 1-2，可留空"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "description": "跨组或当天整体感受，转换时并入 session.note",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

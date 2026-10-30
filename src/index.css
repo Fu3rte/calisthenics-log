@@ -1,0 +1,523 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ============================================================
+   Token 系统：黑白灰阶（Apple 语义灰）+ 液态玻璃材质
+   ============================================================ */
+:root {
+  --radius: 1.75rem;
+
+  --background: 240 11.1% 96.5%;      /* #F5F5F7 */
+  --foreground: 240 3.2% 11.8%;       /* #1D1D1F */
+  --card: 0 0% 100%;
+  --card-foreground: 240 3.2% 11.8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 3.2% 11.8%;
+  --primary: 240 3.2% 11.8%;          /* ink，全场唯一强调色 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4.8% 95.9%;        /* #F2F2F4 */
+  --secondary-foreground: 240 3.2% 11.8%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 2.2% 44.1%; /* #6E6E73 */
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 3.2% 11.8%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 5.9% 83.3%;           /* #D2D2D7 */
+  --input: 240 5.9% 83.3%;
+  --ring: 240 3.2% 11.8%;
+
+  /* 命名灰阶 */
+  --paper: #F5F5F7;
+  --ink: #1D1D1F;
+  --mist: #D2D2D7;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", "PingFang SC", "MiSans", "Inter", sans-serif;
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-mist: var(--mist);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   基础排版（1 字族，14.5px 正文）
+   ============================================================ */
+@layer base {
+  html {
+    background-color: hsl(var(--background));
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: #e0e0e4;
+    background-image:
+      radial-gradient(120% 80% at 50% -20%, #f6f6f8 0%, rgba(246, 246, 248, 0) 60%),
+      linear-gradient(180deg, #e9e9ed 0%, #dedee2 100%);
+    background-attachment: fixed;
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: #fff;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ============================================================
+   液态玻璃（Liquid Glass）
+   高光渐变面 + 背景模糊折射 + 白色内描边 + 柔和外投影
+   ============================================================ */
+@layer components {
+  .glass-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    /* 极低填充：面板内颜色贴着背景，只靠边缘与投影建立体积 */
+    background-color: rgba(255, 255, 255, 0.06);
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.28) 0%,
+      rgba(255, 255, 255, 0.02) 15%,
+      transparent 32%,
+      transparent 68%,
+      rgba(255, 255, 255, 0.02) 85%,
+      rgba(255, 255, 255, 0.28) 100%
+    );
+    /* 小半径模糊：背景结构仍可辨认，透过玻璃留下柔化轮廓 */
+    -webkit-backdrop-filter: blur(5px) saturate(1.8);
+    backdrop-filter: blur(5px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.95),
+      inset 1px 0 0 rgba(255, 255, 255, 0.45),
+      inset -1px 0 0 rgba(255, 255, 255, 0.3),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.35),
+      inset 0 -2px 2px -1px rgba(29, 29, 31, 0.06),
+      0 1px 2px rgba(29, 29, 31, 0.05),
+      0 18px 44px -28px rgba(29, 29, 31, 0.3);
+  }
+
+  /* 内圈柔化暗环：玻璃厚度的折射边 */
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border-radius: calc(var(--radius) - 9px);
+    border: 1px solid rgba(29, 29, 31, 0.08);
+    filter: blur(7px);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* 扫光：从面板底部斜向升起，缓慢掠过玻璃表面 */
+  .glass-panel::after {
+    content: "";
+    position: absolute;
+    width: 150%;
+    height: 26px;
+    top: 100%;
+    left: -100%;
+    background: rgba(255, 255, 255, 0.85);
+    transform: rotate(50deg);
+    filter: blur(26px);
+    animation: shine 14s ease infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .display-text {
+    background-image: linear-gradient(90deg, #000000 0%, #74706f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel {
+    background: rgba(252, 252, 253, 0.96);
+  }
+}
+
+/* ============================================================
+   玻璃「液体感」床：灰阶玻璃珠，24–32s 缓慢漂移
+   ============================================================ */
+.bed {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bed .blob {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.bed .blob-1 {
+  width: 340px;
+  height: 340px;
+  left: 62%;
+  top: 4%;
+  background-image: linear-gradient(135deg, #fdfdfe, #c6c6cd);
+  box-shadow: inset 10px 0 20px #fff;
+  animation: drift-a 28s ease-in-out infinite;
+}
+
+.bed .blob-2 {
+  width: 250px;
+  height: 250px;
+  left: 2%;
+  top: 60%;
+  background-image: linear-gradient(90deg, #6f6f76, #b6b6bd);
+  box-shadow: inset 10px 0 20px rgba(255, 255, 255, 0.8);
+  animation: drift-b 32s ease-in-out infinite;
+}
+
+.bed .blob-3 {
+  width: 180px;
+  height: 180px;
+  left: 46%;
+  top: 22%;
+  background-image: linear-gradient(160deg, #ffffff, #babac1);
+  box-shadow: inset 8px 0 16px #fff;
+  animation: drift-a 24s ease-in-out infinite reverse;
+}
+
+@keyframes drift-a {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-36px, 24px) scale(1.06);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes drift-b {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -20px) scale(0.94);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+/* 面板扫光：从底部斜向升起掠向顶部 */
+@keyframes shine {
+  0% {
+    top: 100%;
+    left: -100%;
+  }
+  55%,
+  100% {
+    top: -10%;
+    left: 70%;
+  }
+}
+
+/* ============================================================
+   训练日历 + 当日记录
+   ============================================================ */
+.calendar-panel {
+  padding: 24px 12px 18px;
+}
+
+.calendar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 6px 14px;
+  border-bottom: 1px solid rgba(29, 29, 31, 0.08);
+}
+
+.calendar-title {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.calendar-count {
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  padding: 14px 0 4px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 12px;
+  color: hsl(var(--muted-foreground));
+}
+
+.calendar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+}
+
+.calendar-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  max-width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--foreground));
+  transition: background-color 0.2s ease, color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.calendar-day.is-idle {
+  color: hsl(var(--muted-foreground));
+}
+
+/* 训练日：透明玻璃珠，上缘高光 / 中部薄雾 / 底缘边缘光 */
+.calendar-day.has-session {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background-color: rgba(255, 255, 255, 0.04);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0) 46%,
+    rgba(255, 255, 255, 0.16) 100%
+  );
+  -webkit-backdrop-filter: blur(3px) saturate(1.8);
+  backdrop-filter: blur(3px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(29, 29, 31, 0.05),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7),
+    0 1px 1px rgba(29, 29, 31, 0.05),
+    0 6px 14px -10px rgba(29, 29, 31, 0.2);
+}
+
+.calendar-day.has-session:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.08) 46%,
+    rgba(255, 255, 255, 0.3) 100%
+  );
+}
+
+/* 选中日：墨色玻璃珠，顶部镜面高光 + 底缘反光边 */
+.calendar-day[aria-pressed="true"] {
+  color: #fff;
+  background-color: #111113;
+  background-image: linear-gradient(
+    180deg,
+    #464648 0%,
+    #1d1d1f 44%,
+    #0a0a0c 100%
+  );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 2px 4px -2px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 8px 16px -10px rgba(0, 0, 0, 0.55);
+}
+
+.calendar-day[aria-pressed="true"]:hover {
+  background-color: #111113;
+  background-image: linear-gradient(
+    180deg,
+    #464648 0%,
+    #1d1d1f 44%,
+    #0a0a0c 100%
+  );
+}
+
+.day-panel {
+  padding: 24px 22px;
+}
+
+.day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(29, 29, 31, 0.08);
+}
+
+.day-title {
+  font-size: 20px;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.day-meta {
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.day-exercises {
+  padding-top: 4px;
+}
+
+.day-exercise {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+}
+
+.day-exercise + .day-exercise {
+  border-top: 1px solid rgba(29, 29, 31, 0.06);
+}
+
+.day-exercise-name {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.day-exercise-sets {
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+/* RIR 胶囊：与选中日同一套墨色玻璃语言 */
+.badge-ink {
+  background-image: linear-gradient(
+    180deg,
+    #464648 0%,
+    #1d1d1f 44%,
+    #0a0a0c 100%
+  );
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 4px 10px -6px rgba(0, 0, 0, 0.45);
+}
+
+.day-note {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: hsl(var(--foreground));
+}
+
+.day-note.is-empty {
+  color: hsl(var(--muted-foreground));
+}
+
+.day-note .badge-ink {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+@media (min-width: 720px) {
+  .calendar-panel {
+    padding: 30px 24px 24px;
+  }
+
+  .day-panel {
+    padding: 30px 28px;
+  }
+}
+
+@media (min-width: 900px) {
+  .calendar-panel {
+    padding: 34px 30px 28px;
+  }
+}
+
+@media (max-width: 719px) {
+  .bed .blob-2 {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bed .blob-1,
+  .bed .blob-2,
+  .bed .blob-3 {
+    animation: none;
+  }
+
+  .glass-panel::after {
+    animation: none;
+    opacity: 0;
+  }
+}
