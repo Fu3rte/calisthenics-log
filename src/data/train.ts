@@ -285,6 +285,19 @@ export function fmtDay(date: string): string {
   return String(Number(date.slice(8, 10)));
 }
 
+/* 月份键统一 YYYY-MM（零填充，字典序即时间序） */
+export function monthParts(monthKey: string): { year: number; month: number } {
+  return {
+    year: Number(monthKey.slice(0, 4)),
+    month: Number(monthKey.slice(5, 7)),
+  };
+}
+
+export function currentMonthKey(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 export function weekdayCN(date: string): string {
