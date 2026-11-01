@@ -9,6 +9,10 @@ export function DayRecord({ session }: { session: Session }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const note = splitNote(session.note);
   const sets = session.exercises.reduce((n, ex) => n + ex.sets.length, 0);
+  const reps = session.exercises.reduce(
+    (n, ex) => n + ex.sets.reduce((m, r) => m + r, 0),
+    0
+  );
 
   useLayoutEffect(() => {
     const el = bodyRef.current;
@@ -45,7 +49,7 @@ export function DayRecord({ session }: { session: Session }) {
           {fmtMonth(session.date)} 月 {fmtDay(session.date)} 日
         </h2>
         <p className="day-meta num">
-          {weekdayCN(session.date)} · {sets} 组
+          {weekdayCN(session.date)} · {sets} 组 · {reps} 次
         </p>
       </header>
 
@@ -53,8 +57,21 @@ export function DayRecord({ session }: { session: Session }) {
         <div className="day-exercises">
           {session.exercises.map((ex) => (
             <div key={ex.name} className="day-exercise">
-              <span className="day-exercise-name">{ex.name}</span>
-              <span className="day-exercise-sets num">{ex.sets.length} 组</span>
+              <div className="day-exercise-head">
+                <span className="day-exercise-name">{ex.name}</span>
+                <span className="day-exercise-sets num">
+                  {ex.sets.length} 组 · {ex.sets.reduce((m, r) => m + r, 0)} 次
+                </span>
+              </div>
+              <ol className="day-set-list">
+                {ex.sets.map((r, i) => (
+                  <li key={i} className="day-set">
+                    <span className="day-set-index">第 {i + 1} 组</span>
+                    <span className="day-set-leader" aria-hidden="true" />
+                    <span className="day-set-reps num">{r} 次</span>
+                  </li>
+                ))}
+              </ol>
             </div>
           ))}
         </div>

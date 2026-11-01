@@ -298,6 +298,15 @@ export function currentMonthKey(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/* 月份键 ±n 月；YYYY-MM 字典序即时间序 */
+export function shiftMonth(monthKey: string, delta: number): string {
+  const { year, month } = monthParts(monthKey);
+  const total = year * 12 + (month - 1) + delta;
+  const y = Math.floor(total / 12);
+  const m = (total % 12) + 1;
+  return `${y}-${String(m).padStart(2, "0")}`;
+}
+
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 export function weekdayCN(date: string): string {

@@ -93,7 +93,8 @@
   }
 
   body {
-    min-height: 100dvh;
+    height: 100dvh;
+    overflow: hidden;
     background-color: #e0e0e4;
     background-image:
       radial-gradient(120% 80% at 50% -20%, #f6f6f8 0%, rgba(246, 246, 248, 0) 60%),
@@ -290,6 +291,78 @@
 }
 
 /* ============================================================
+   应用外壳：整页锁定 100dvh
+   页面级滚动条不再随内容高度出现/消失，切换月份不抖
+   ============================================================ */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* 常驻滚动条槽位：内容高度变化也不挤动内容宽度 */
+  scrollbar-gutter: stable;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 32px 20px 64px;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .app-main {
+    padding: 48px 28px 32px;
+  }
+}
+
+@media (min-width: 900px) {
+  /* 桌面：两栏各自内滚，页面本身永不滚动 */
+  .app-scroll {
+    overflow: hidden;
+  }
+
+  .app-main {
+    height: 100%;
+  }
+
+  .app-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .app-col {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+  }
+}
+
+/* ============================================================
    训练日历 + 当日记录
    ============================================================ */
 .calendar-panel {
@@ -303,6 +376,18 @@
   gap: 12px;
   padding: 0 6px 14px;
   border-bottom: 1px solid rgba(29, 29, 31, 0.08);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 2px;
 }
 
 .calendar-count {
@@ -550,15 +635,18 @@
 }
 
 .day-exercise {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   padding: 11px 0;
 }
 
 .day-exercise + .day-exercise {
   border-top: 1px solid rgba(29, 29, 31, 0.06);
+}
+
+.day-exercise-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .day-exercise-name {
@@ -570,6 +658,41 @@
 .day-exercise-sets {
   font-size: 12.5px;
   color: hsl(var(--muted-foreground));
+}
+
+/* 组次明细：每组一行，像训练笔记里的手写账 */
+.day-set-list {
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-set {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 13px;
+  color: hsl(var(--muted-foreground));
+}
+
+.day-set-index {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.day-set-leader {
+  flex: 1 1 auto;
+  height: 1px;
+  align-self: center;
+  border-bottom: 1px dotted rgba(29, 29, 31, 0.22);
+}
+
+.day-set-reps {
+  flex: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
 }
 
 /* RIR 胶囊：与选中日同一套墨色玻璃语言 */

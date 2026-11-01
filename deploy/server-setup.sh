@@ -1,20 +1,31 @@
 #!/usr/bin/env bash
-# 服务器执行一次：装 nginx、开 Basic Auth、签 HTTPS 证书、挂站点。
-# 前置：域名已解析到本机公网 IP，安全组放行 80/443，域名已完成 ICP 备案。
-# 用法：sudo DOMAIN=train.example.com AUTH_USER=eric LETSENCRYPT_EMAIL=you@example.com bash deploy/server-setup.sh
+# 服务器执行一次：装 SDK 依赖、DNS-01 签证书、挂站点。只新增 conf.d 一个文件并 reload nginx。
+# 前置：DNSPod 已解析该子域，且 /etc/letsencrypt/dnspod-credentials.json 已写好 API 凭证。
+# 用法：sudo DOMAIN=train.f1nnian.site bash deploy/server-setup.sh
 set -euo pipefail
 
-DOMAIN="${DOMAIN:?缺少 DOMAIN，例：DOMAIN=train.example.com}"
-AUTH_USER="${AUTH_USER:?缺少 AUTH_USER，登录用户名}"
-LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:?缺少 LETSENCRYPT_EMAIL，证书到期提醒邮箱}"
+DOMAIN="${DOMAIN:?缺少 DOMAIN，例：DOMAIN=train.f1nnian.site}"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REMOTE_DIR=/srv/calisthenics
 HTPASSWD=/etc/nginx/calisthenics.htpasswd
 CONF=/etc/nginx/conf.d/calisthenics.conf
+CRED=/etc/letsencrypt/dnspod-credentials.json
+VENV=/opt/dnspod-dns01
+HOOK=/etc/letsencrypt/dns01-hook.py
+PIP_MIRROR=https://mirrors.cloud.tencent.com/pypi/simple
 
 command -v apt-get >/dev/null 2>&1 || { echo "需要 Debian/Ubuntu 的 apt-get"; exit 1; }
+[ -f "$SCRIPT_DIR/dns01-hook.py" ] || { echo "缺少 $SCRIPT_DIR/dns01-hook.py"; exit 1; }
+if [ ! -f "$CRED" ]; then
+  echo "缺少 $CRED，先执行：sudo bash $SCRIPT_DIR/set-credentials.sh"
+  exit 1
+fi
+
 apt-get update -qq
 command -v nginx >/dev/null 2>&1 || apt-get install -y nginx
-command -v certbot >/dev/null 2>&1 || apt-get install -y certbot python3-certbot-nginx
+command -v certbot >/dev/null 2>&1 || apt-get install -y certbot
+command -v dig >/dev/null 2>&1 || apt-get install -y dnsutils
+[ -d "$VENV" ] || apt-get install -y python3-venv
 
 if id -u www-data >/dev/null 2>&1; then
   WEB_GROUP=www-data
@@ -34,12 +45,14 @@ else
   HTTP2_ON=""
 fi
 
-read -rsp "为 $AUTH_USER 设置登录密码: " AUTH_PASS
-echo
-printf '%s:%s\n' "$AUTH_USER" "$(openssl passwd -6 "$AUTH_PASS")" > "$HTPASSWD"
-unset AUTH_PASS
-chmod 640 "$HTPASSWD"
-chown "root:$WEB_GROUP" "$HTPASSWD"
+# 登录口令由 set-auth.sh 单独写入；空文件即全员 401，属于失败关闭
+if [ ! -f "$HTPASSWD" ]; then
+  : > "$HTPASSWD"
+  chmod 640 "$HTPASSWD"
+  chown "root:$WEB_GROUP" "$HTPASSWD"
+fi
+chmod 600 "$CRED"
+chown root:root "$CRED"
 
 mkdir -p "$REMOTE_DIR/incoming" "$REMOTE_DIR/releases/empty"
 if [ ! -e "$REMOTE_DIR/current" ]; then
@@ -49,20 +62,24 @@ fi
 chown -R "${SUDO_USER:-root}:$WEB_GROUP" "$REMOTE_DIR"
 chmod -R u+rwX,go+rX "$REMOTE_DIR"
 
-# 默认站点先跑起来，用 /var/www/html 承接 ACME HTTP-01 校验
-systemctl enable --now nginx
-certbot certonly --webroot -w /var/www/html -d "$DOMAIN" \
-  --non-interactive --agree-tos -m "$LETSENCRYPT_EMAIL" --keep-until-expiring
+[ -d "$VENV" ] || python3 -m venv "$VENV"
+"$VENV/bin/pip" install --quiet --upgrade -i "$PIP_MIRROR" tencentcloud-sdk-python
+install -m 640 "$SCRIPT_DIR/dns01-hook.py" "$HOOK"
+
+DNS_HOOKS=(
+  --manual
+  --preferred-challenges dns
+  --manual-auth-hook "$VENV/bin/python $HOOK auth"
+  --manual-cleanup-hook "$VENV/bin/python $HOOK cleanup"
+)
+certbot certonly "${DNS_HOOKS[@]}" -d "$DOMAIN" \
+  --non-interactive --agree-tos --key-type ecdsa --keep-until-expiring
 
 cat > "$CONF" <<EOF
 server {
     listen 80;
     listen [::]:80;
     server_name $DOMAIN;
-
-    location /.well-known/acme-challenge/ {
-        root /var/www/html;
-    }
 
     location / {
         return 301 https://\$host\$request_uri;
@@ -72,6 +89,9 @@ server {
 server {
     $LISTEN_V4
     $LISTEN_V6
+    # 腾讯云备案拦截只作用于 80/443，备案下来前用 8443 走同一张证书
+    listen 8443 ssl;
+    listen [::]:8443 ssl;
     $HTTP2_ON
     server_name $DOMAIN;
 
@@ -119,5 +139,6 @@ nginx -t
 systemctl reload nginx
 
 echo
-echo "完成。登录用户 $AUTH_USER，地址 https://$DOMAIN"
+echo "站点已挂好，口令未设置前一律 401。设置口令："
+echo "  sudo bash $SCRIPT_DIR/set-auth.sh <用户名>"
 echo "之后每次记录完训练：本机执行 SERVER=<用户>@<IP> bash deploy/deploy.sh"

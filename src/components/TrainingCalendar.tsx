@@ -1,6 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { MonthPicker } from "@/components/MonthPicker";
-import { monthParts, weekdayCN, type Session } from "@/data/train";
+import { monthParts, shiftMonth, weekdayCN, type Session } from "@/data/train";
 
 interface TrainingCalendarProps {
   /** 展示月，YYYY-MM */
@@ -32,15 +32,60 @@ export function TrainingCalendar({
   /* 周一为一周起点 */
   const blanks = (new Date(year, month - 1, 1).getDay() + 6) % 7;
 
+  const prevKey = shiftMonth(monthKey, -1);
+  const nextKey = shiftMonth(monthKey, 1);
+  const prevDisabled = prevKey < minMonth;
+  const nextDisabled = nextKey > maxMonth;
+
   return (
     <Card className="glass-panel calendar-panel" aria-labelledby="calendarTitle">
       <header className="calendar-head">
-        <MonthPicker
-          value={monthKey}
-          min={minMonth}
-          max={maxMonth}
-          onChange={onMonthChange}
-        />
+        <div className="calendar-nav">
+          <MonthPicker
+            value={monthKey}
+            min={minMonth}
+            max={maxMonth}
+            onChange={onMonthChange}
+          />
+          <div className="calendar-nav-btns">
+            <button
+              type="button"
+              className="month-nav-btn"
+              aria-label="上一月"
+              disabled={prevDisabled}
+              onClick={() => onMonthChange(prevKey)}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M10 3.5 5.5 8 10 12.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="month-nav-btn"
+              aria-label="下一月"
+              disabled={nextDisabled}
+              onClick={() => onMonthChange(nextKey)}
+            >
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path
+                  d="M6 3.5 10.5 8 6 12.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
         <p className="calendar-count num">{sessions.length} 次训练</p>
       </header>
 

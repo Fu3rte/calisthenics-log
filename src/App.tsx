@@ -62,45 +62,53 @@ export default function App() {
         <div className="blob blob-3" />
       </div>
 
-      <main className="relative z-[1] mx-auto flex max-w-[960px] flex-col gap-6 px-5 pt-8 pb-16 min-[960px]:px-7 min-[960px]:pt-12 min-[960px]:pb-24">
-        <header>
-          <h1 className="display-text text-[30px] leading-[1.2] font-[650] tracking-[-0.02em] min-[960px]:text-[34px]">
-            街健日志
-          </h1>
-          <p className="mt-1.5 text-[14.5px] text-muted-foreground">
-            {sessions.length ? `${year} 年 ${month} 月 · 训练记录` : "训练记录"}
-          </p>
-        </header>
+      <div className="app-shell">
+        <div className="app-scroll">
+          <main className="app-main">
+            <header>
+              <h1 className="display-text text-[30px] leading-[1.2] font-[650] tracking-[-0.02em] min-[960px]:text-[34px]">
+                街健日志
+              </h1>
+              <p className="mt-1.5 text-[14.5px] text-muted-foreground">
+                {sessions.length ? `${year} 年 ${month} 月 · 训练记录` : "训练记录"}
+              </p>
+            </header>
 
-        {sessions.length === 0 ? (
-          <div className="glass-panel px-6 py-10">
-            <p className="text-[14.5px] leading-[1.8] text-muted-foreground">
-              {EMPTY_MSG}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 items-start gap-4 min-[900px]:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] min-[900px]:gap-5">
-            <TrainingCalendar
-              monthKey={viewMonth}
-              minMonth={months.min}
-              maxMonth={months.max}
-              onMonthChange={changeMonth}
-              sessions={monthSessions}
-              selected={selected}
-              onSelect={setSelected}
-            />
-            {selectedSession ? (
-              <DayRecord session={selectedSession} />
-            ) : (
-              <Card className="glass-panel day-panel self-start">
-                <p className="day-note is-empty">
-                  {year} 年 {month} 月还没有训练记录。
+            {sessions.length === 0 ? (
+              <div className="glass-panel px-6 py-10">
+                <p className="text-[14.5px] leading-[1.8] text-muted-foreground">
+                  {EMPTY_MSG}
                 </p>
-              </Card>
+              </div>
+            ) : (
+              <div className="app-grid">
+                <div className="app-col">
+                  <TrainingCalendar
+                    monthKey={viewMonth}
+                    minMonth={months.min}
+                    maxMonth={months.max}
+                    onMonthChange={changeMonth}
+                    sessions={monthSessions}
+                    selected={selected}
+                    onSelect={setSelected}
+                  />
+                </div>
+                <div className="app-col">
+                  {selectedSession ? (
+                    <DayRecord session={selectedSession} />
+                  ) : (
+                    <Card className="glass-panel day-panel self-start">
+                      <p className="day-note is-empty">
+                        {year} 年 {month} 月还没有训练记录。
+                      </p>
+                    </Card>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
-        )}
-      </main>
+          </main>
+        </div>
+      </div>
     </>
   );
 }
