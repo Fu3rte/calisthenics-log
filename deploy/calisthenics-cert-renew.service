@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Calisthenics TLS certificate (DNS-01)
+Documentation=man:certbot(1)
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/letsencrypt/calisthenics.env
+ExecStart=/usr/local/bin/renew-cert.sh

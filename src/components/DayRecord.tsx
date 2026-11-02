@@ -2,17 +2,24 @@ import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { fmtDay, fmtMonth, splitNote, weekdayCN, type Session } from "@/data/train";
+import {
+  fmtDay,
+  fmtMonth,
+  normalizeSet,
+  splitNote,
+  weekdayCN,
+  type Session,
+} from "@/data/train";
 import { hasGsap, prefersReducedMotion } from "@/hooks/useCountUp";
 
 export function DayRecord({ session }: { session: Session }) {
   const bodyRef = useRef<HTMLDivElement>(null);
   const note = splitNote(session.note);
   const sets = session.exercises.reduce((n, ex) => n + ex.sets.length, 0);
-  const reps = session.exercises.reduce(
-    (n, ex) => n + ex.sets.reduce((m, r) => m + r, 0),
-    0
-  );
+  const reps = session.exercises.reduce((n, ex) => {
+    const exReps = ex.sets.map(normalizeSet);
+    return n + exReps.reduce((m, s) => m + s.reps, 0);
+  }, 0);
 
   useLayoutEffect(() => {
     const el = bodyRef.current;
@@ -54,27 +61,44 @@ export function DayRecord({ session }: { session: Session }) {
       </header>
 
       <div ref={bodyRef}>
-        <div className="day-exercises">
-          {session.exercises.map((ex) => (
-            <div key={ex.name} className="day-exercise">
-              <div className="day-exercise-head">
-                <span className="day-exercise-name">{ex.name}</span>
-                <span className="day-exercise-sets num">
-                  {ex.sets.length} 组 · {ex.sets.reduce((m, r) => m + r, 0)} 次
-                </span>
+              <div className="day-exercises">
+                {session.exercises.map((ex) => {
+                  const sets = ex.sets.map(normalizeSet);
+                  return (
+                  <div key={ex.name} className="day-exercise">
+                    <div className="day-exercise-head">
+                      <span className="day-exercise-name">{ex.name}</span>
+                      <span className="day-exercise-sets num">
+                        {sets.length} 组 · {sets.reduce((m, s) => m + s.reps, 0)} 次
+                      </span>
+                    </div>
+                    <ol className="day-set-list">
+                      {sets.map((s, i) => {
+                        const setNote = splitNote(s.note ?? "");
+                        return (
+                        <li key={i} className="day-set">
+                          <span className="day-set-index">第 {i + 1} 组</span>
+                          <span className="day-set-leader" aria-hidden="true" />
+                          <span className="day-set-reps num">{s.reps} 次</span>
+                          {setNote.text && (
+                            <span className="day-set-note">{setNote.text}</span>
+                          )}
+                          {setNote.badge && (
+                            <Badge
+                              variant="ink"
+                              className="badge-ink h-auto rounded-full px-[10px] py-[2px] text-[12px] font-semibold"
+                            >
+                              {setNote.badge}
+                            </Badge>
+                          )}
+                        </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+                  );
+                })}
               </div>
-              <ol className="day-set-list">
-                {ex.sets.map((r, i) => (
-                  <li key={i} className="day-set">
-                    <span className="day-set-index">第 {i + 1} 组</span>
-                    <span className="day-set-leader" aria-hidden="true" />
-                    <span className="day-set-reps num">{r} 次</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          ))}
-        </div>
 
         <p className={`day-note${session.note ? "" : " is-empty"}`}>
           {session.note ? (

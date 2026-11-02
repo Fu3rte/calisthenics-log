@@ -1,0 +1,9 @@
+[Unit]
+Description=Daily TLS certificate renewal for Calisthenics
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

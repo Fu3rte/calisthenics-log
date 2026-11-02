@@ -75,6 +75,18 @@ DNS_HOOKS=(
 certbot certonly "${DNS_HOOKS[@]}" -d "$DOMAIN" \
   --non-interactive --agree-tos --key-type ecdsa --keep-until-expiring
 
+# 安装每日续期 timer（避免 90 天到期站点静默不可用）
+cat > /etc/letsencrypt/calisthenics.env <<EOF
+DOMAIN=$DOMAIN
+EOF
+chmod 600 /etc/letsencrypt/calisthenics.env
+chown root:root /etc/letsencrypt/calisthenics.env
+install -m 750 "$SCRIPT_DIR/renew-cert.sh" /usr/local/bin/renew-cert.sh
+install -m 644 "$SCRIPT_DIR/calisthenics-cert-renew.service" /etc/systemd/system/
+install -m 644 "$SCRIPT_DIR/calisthenics-cert-renew.timer" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now calisthenics-cert-renew.timer
+
 cat > "$CONF" <<EOF
 server {
     listen 80;

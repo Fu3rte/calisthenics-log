@@ -9,6 +9,7 @@
 """
 
 import json
+import os
 import re
 import sys
 from datetime import datetime
@@ -31,9 +32,22 @@ def load(path):
 
 
 def dump(path, data):
-    with path.open("w", encoding="utf-8", newline="\n") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    """原子写入：先写同目录临时文件并落盘，再 os.replace 换入。
+
+    中途失败（磁盘满、进程被杀、断电）时原文件保持不变，
+    不会留下半截 JSON 把历史记录一起毁掉。
+    """
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        with tmp.open("w", encoding="utf-8", newline="\n") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
 
 
 def empty_snapshot():
@@ -43,39 +57,46 @@ def empty_snapshot():
 # ---------------- 校验 ----------------
 
 def check_log(data):
+    """校验形状，与前端 isValidTrainingData 一致：只查必填字段与类型，不限制额外键。"""
     errs = []
-    if not isinstance(data, dict) or set(data) != {"sessions"}:
-        return ["顶层字段必须且仅包含 sessions"]
+    if not isinstance(data, dict) or "sessions" not in data:
+        return ["顶层必须包含 sessions"]
     sessions = data["sessions"]
     if not isinstance(sessions, list):
         return ["sessions 必须是数组"]
     for i, s in enumerate(sessions):
         p = f"sessions[{i}]"
-        if not isinstance(s, dict) or set(s) != {"date", "exercises", "note"}:
-            errs.append(f"{p} 字段必须为 date/exercises/note")
+        if not isinstance(s, dict):
+            errs.append(f"{p} 必须是对象")
             continue
-        if not isinstance(s["date"], str) or not DATE_RE.match(s["date"]):
+        if not isinstance(s.get("date"), str) or not DATE_RE.match(s.get("date", "")):
             errs.append(f"{p}.date 格式应为 YYYY-MM-DD")
-        if not isinstance(s["note"], str):
+        if not isinstance(s.get("note"), str):
             errs.append(f"{p}.note 必须是字符串")
-        exs = s["exercises"]
+        exs = s.get("exercises")
         if not isinstance(exs, list) or not exs:
             errs.append(f"{p}.exercises 必须是非空数组")
             continue
         for j, e in enumerate(exs):
             ep = f"{p}.exercises[{j}]"
-            if not isinstance(e, dict) or set(e) != {"name", "sets"}:
-                errs.append(f"{ep} 字段必须为 name/sets")
+            if not isinstance(e, dict):
+                errs.append(f"{ep} 必须是对象")
                 continue
-            if not isinstance(e["name"], str) or not e["name"]:
+            if not isinstance(e.get("name"), str) or not e["name"]:
                 errs.append(f"{ep}.name 必须是非空字符串")
-            st = e["sets"]
+            st = e.get("sets")
             if not isinstance(st, list) or not st:
                 errs.append(f"{ep}.sets 必须是非空数组")
                 continue
             for k, r in enumerate(st):
-                if not isinstance(r, int) or isinstance(r, bool) or r < 1:
-                    errs.append(f"{ep}.sets[{k}] 必须是正整数")
+                if isinstance(r, dict):
+                    if "reps" not in r or not isinstance(r.get("reps"), int) \
+                            or isinstance(r["reps"], bool) or r["reps"] < 1 \
+                            or (r.get("note") is not None
+                                and not isinstance(r.get("note"), str)):
+                        errs.append(f"{ep}.sets[{k}] 必须是正整数或 {{reps,note}}")
+                elif not isinstance(r, int) or isinstance(r, bool) or r < 1:
+                    errs.append(f"{ep}.sets[{k}] 必须是正整数或 {{reps,note}}")
     return errs
 
 
@@ -113,24 +134,20 @@ def check_snapshot(data):
 # ---------------- 快照 → 记录 ----------------
 
 def group_sets(snap):
-    """按动作首次出现顺序分组，保持组内顺序。"""
+    """按动作首次出现顺序分组，保持组内顺序；每组保留 reps 与 note。"""
     order, groups = [], {}
     for s in snap["sets"]:
         name = s["exercise"].strip()
         if name not in groups:
             groups[name] = []
             order.append(name)
-        groups[name].append(s["reps"])
+        groups[name].append({"reps": s["reps"], "note": s["note"]})
     return [(n, groups[n]) for n in order]
 
 
 def collect_note(snap):
+    """仅聚合当天整体感受（notes），逐组备注已保留在 sets[n].note。"""
     parts, seen = [], set()
-    for s in snap["sets"]:
-        t = s["note"].strip()
-        if t and t not in seen:
-            seen.add(t)
-            parts.append(t)
     for n in snap["notes"]:
         t = n.strip()
         if t and t not in seen:
@@ -196,8 +213,9 @@ def merge():
 
     out(f"{action} {date} 记录：")
     for e in target["exercises"]:
-        total = sum(e["sets"])
-        out(f"  {e['name']}  {len(e['sets'])} 组  {e['sets']}  合计 {total}")
+        reps = [s["reps"] if isinstance(s, dict) else s for s in e["sets"]]
+        total = sum(reps)
+        out(f"  {e['name']}  {len(reps)} 组  {reps}  合计 {total}")
     out(f"  note: {target['note'] or '(空)'}")
     out(f"日志共 {len(log['sessions'])} 条记录，快照已重置。")
     return 0
