@@ -1,0 +1,1969 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ============================================================
+   Token 系统：黑白灰阶（Apple 语义灰）+ 液态玻璃材质
+   ============================================================ */
+:root {
+  --radius: 1.75rem;
+
+  --background: 240 11.1% 96.5%;      /* #F5F5F7 */
+  --foreground: 240 3.2% 11.8%;       /* #1D1D1F */
+  --card: 0 0% 100%;
+  --card-foreground: 240 3.2% 11.8%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 3.2% 11.8%;
+  --primary: 240 3.2% 11.8%;          /* ink，全场唯一强调色 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 4.8% 95.9%;        /* #F2F2F4 */
+  --secondary-foreground: 240 3.2% 11.8%;
+  --muted: 240 4.8% 95.9%;
+  --muted-foreground: 240 3.2% 39.2%; /* #626267，玻璃与灰底上保持正文级对比度 */
+  --accent: 240 4.8% 95.9%;
+  --accent-foreground: 240 3.2% 11.8%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 240 5.9% 83.3%;           /* #D2D2D7 */
+  --input: 240 5.9% 83.3%;
+  --ring: 240 3.2% 11.8%;
+
+  /* 命名灰阶 */
+  --paper: #F5F5F7;
+  --ink: #1D1D1F;
+  --mist: #D2D2D7;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", "PingFang SC", "MiSans", "Inter", sans-serif;
+
+  /* -------- 组件层令牌 -------- */
+  /* 墨色玻璃面：选中日、选中月、RIR 胶囊共用 */
+  --surface-ink: linear-gradient(180deg, #464648 0%, #1d1d1f 44%, #0a0a0c 100%);
+  --surface-ink-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    0 4px 10px -6px rgba(0, 0, 0, 0.45);
+
+  /* 月历选择器 */
+  --month-pop-width: min(268px, calc(100vw - 40px));
+  --month-cell-height: 40px;
+  --month-nav-size: 36px;
+  --month-hover-bg: rgba(255, 255, 255, 0.5);
+  --month-fg-disabled: rgba(29, 29, 31, 0.38);
+  --month-duration: 150ms;
+
+  /* -------- 玻璃材质：填充、模糊、边缘、投影 -------- */
+  /* 面板只靠边缘与投影立体积，填充留出背景；文字面板单独加厚 */
+  --glass-fill: rgba(255, 255, 255, 0.18);
+  --glass-fill-text: rgba(255, 255, 255, 0.34);
+  --glass-fill-solid: rgba(255, 255, 255, 0.58);
+  --glass-blur: blur(6px) saturate(1.7);
+  --glass-blur-strong: blur(20px) saturate(1.6);
+  --glass-edge: rgba(255, 255, 255, 0.52);
+  --glass-rule: rgba(29, 29, 31, 0.085);
+  --glass-rule-strong: rgba(29, 29, 31, 0.14);
+  --glass-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 1px 0 0 rgba(255, 255, 255, 0.42),
+    inset -1px 0 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -2px 2px -1px rgba(29, 29, 31, 0.05),
+    0 1px 2px rgba(29, 29, 31, 0.04),
+    0 18px 40px -28px rgba(29, 29, 31, 0.28);
+  --glass-glow: rgba(255, 255, 255, 0.5);
+
+  /* -------- 4px 网格与统一节奏 -------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --panel-pad-x: 20px;
+  --panel-pad-y: 20px;
+  --head-gap: 12px;
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-mist: var(--mist);
+
+  --radius-sm: calc(var(--radius) - 8px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ============================================================
+   基础排版（1 字族，14.5px 正文）
+   ============================================================ */
+@layer base {
+  html {
+    background-color: hsl(var(--background));
+  }
+
+  body {
+    height: 100dvh;
+    overflow: hidden;
+    background-color: #e0e0e4;
+    background-image:
+      radial-gradient(120% 80% at 50% -20%, #f6f6f8 0%, rgba(246, 246, 248, 0) 60%),
+      linear-gradient(180deg, #e9e9ed 0%, #dedee2 100%);
+    background-attachment: fixed;
+    color: hsl(var(--foreground));
+    font-family: var(--font-sans);
+    font-size: 14.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--ink);
+    color: #fff;
+  }
+
+  :where(button, a, textarea, input, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* 玻璃面板裁掉溢出，焦点环改画在内侧，任何面板都不会切掉它 */
+  .glass-panel :where(button, a, textarea, input, [role="button"]):focus-visible,
+  .glass-panel:focus-visible {
+    outline-offset: -3px;
+  }
+
+  /* 墨色选中面上的焦点环换白色，避免环与底同色 */
+  .calendar-day[aria-pressed="true"]:focus-visible,
+  .month-cell[aria-pressed="true"]:focus-visible {
+    outline-color: #fff;
+    outline-offset: -4px;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+/* ============================================================
+   液态玻璃（Liquid Glass）
+   高光渐变面 + 背景模糊折射 + 白色内描边 + 柔和外投影
+   ============================================================ */
+@layer components {
+  .glass-panel {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    /* 低填充：面板内颜色贴着背景，只靠边缘与投影建立体积 */
+    background-color: var(--glass-fill);
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0.02) 16%,
+      transparent 34%,
+      transparent 66%,
+      rgba(255, 255, 255, 0.02) 84%,
+      rgba(255, 255, 255, 0.24) 100%
+    );
+    /* 小半径模糊：背景结构仍可辨认，透过玻璃留下柔化轮廓 */
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-edge);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-shadow);
+  }
+
+  /* 承载正文的大面板：填充更实，保证长文本在玻璃球前的对比度 */
+  .glass-panel.is-text {
+    background-color: var(--glass-fill-text);
+  }
+
+  /* 内圈柔化暗环：玻璃厚度的折射边 */
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border-radius: calc(var(--radius) - 9px);
+    border: 1px solid rgba(29, 29, 31, 0.06);
+    filter: blur(7px);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* 扫光：从面板底部斜向升起，缓慢掠过玻璃表面。
+     亮度压到只够感觉到一次移动，不干扰文字；只用 transform，不推动布局。 */
+  .glass-panel::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 140%;
+    height: 18px;
+    background: var(--glass-glow);
+    filter: blur(30px);
+    transform: translate3d(-110%, 120%, 0) rotate(50deg);
+    animation: shine 26s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* 文字密度高的面（对话、弹层、抽屉）不扫光：亮斑横穿文字就是干扰 */
+  .glass-panel.no-shine::after {
+    display: none;
+  }
+
+  .display-text {
+    /* 两端都留在可读区间，渐变只做体积，不做淡出 */
+    background-image: linear-gradient(100deg, #161618 0%, #3b3b3e 62%, #5d5d62 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel {
+    background: rgba(252, 252, 253, 0.96);
+  }
+}
+
+/* ============================================================
+   玻璃「液体感」床：灰阶玻璃珠，24–32s 缓慢漂移
+   ============================================================ */
+.bed {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bed .blob {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+
+.bed .blob-1 {
+  width: 340px;
+  height: 340px;
+  left: 62%;
+  top: 4%;
+  /* 珠体亮度压一档：玻璃球是背景，不能把面板上的文字洗掉 */
+  background-image: linear-gradient(135deg, #f7f7f9, #cacad0);
+  box-shadow: inset 10px 0 20px rgba(255, 255, 255, 0.92);
+  animation: drift-a 28s ease-in-out infinite;
+}
+
+.bed .blob-2 {
+  width: 250px;
+  height: 250px;
+  left: 2%;
+  top: 60%;
+  background-image: linear-gradient(90deg, #85858c, #bfbfc5);
+  box-shadow: inset 10px 0 20px rgba(255, 255, 255, 0.8);
+  animation: drift-b 32s ease-in-out infinite;
+}
+
+.bed .blob-3 {
+  width: 180px;
+  height: 180px;
+  left: 46%;
+  top: 22%;
+  background-image: linear-gradient(160deg, #ffffff, #babac1);
+  box-shadow: inset 8px 0 16px #fff;
+  animation: drift-a 24s ease-in-out infinite reverse;
+}
+
+@keyframes drift-a {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-36px, 24px) scale(1.06);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes drift-b {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(30px, -20px) scale(0.94);
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+/* 面板扫光：从底部斜向升起掠向顶部 */
+@keyframes shine {
+  0% {
+    transform: translate3d(-110%, 120%, 0) rotate(50deg);
+  }
+  55%,
+  100% {
+    transform: translate3d(60%, -40%, 0) rotate(50deg);
+  }
+}
+
+/* ============================================================
+   应用外壳：整页锁定 100dvh
+   页面级滚动条不再随内容高度出现/消失，切换月份不抖
+   ============================================================ */
+.app-frame {
+  height: 100dvh;
+}
+
+/* 内容区作为尺寸容器：两栏看可用宽度，不看视口，侧栏折叠后自动回到两栏 */
+.app-view {
+  position: relative;
+  z-index: 1;
+  container-type: inline-size;
+  height: 100%;
+  min-height: 0;
+}
+
+.app-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.app-main {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  padding: 24px 16px 40px;
+}
+
+.app-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .app-main {
+    padding: 40px 28px 32px;
+  }
+}
+
+@container (min-width: 840px) {
+  /* 宽内容区：两栏各自内滚，页面本身永不滚动 */
+  .app-scroll {
+    overflow: hidden;
+  }
+
+  .app-main {
+    height: 100%;
+  }
+
+  .app-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* 日历固定够 7 列，剩余宽度给记录：长备注需要行宽 */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+  }
+
+  .app-col {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
+/* ============================================================
+   训练日历 + 当日记录
+   两张面板共用同一套内边距、标题基线与分隔线
+   ============================================================ */
+.calendar-panel {
+  padding: var(--panel-pad-y) 14px 16px;
+}
+
+.calendar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 0 6px 12px;
+  border-bottom: 1px solid var(--glass-rule);
+}
+
+/* 月份标题与翻页按钮成组，窄屏时整组不被拆开，计数另起一行 */
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.calendar-nav-btns {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.calendar-count {
+  flex: none;
+  margin-left: auto;
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-weekdays {
+  padding: 12px 0 2px;
+}
+
+.calendar-weekday {
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+.calendar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+
+.calendar-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  max-width: 100%;
+  height: 44px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-variant-numeric: tabular-nums;
+  color: hsl(var(--foreground));
+  transition: background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* 无记录日期：用字重与珠体区分，不靠降透明度牺牲可读性 */
+.calendar-day.is-idle {
+  color: hsl(var(--muted-foreground));
+  font-weight: 400;
+}
+
+/* 训练日：透明玻璃珠，上缘高光 / 中部薄雾 / 底缘边缘光 */
+.calendar-day.has-session {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background-color: rgba(255, 255, 255, 0.2);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0) 46%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+  -webkit-backdrop-filter: blur(3px) saturate(1.8);
+  backdrop-filter: blur(3px) saturate(1.8);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 -1px 1px rgba(29, 29, 31, 0.05),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8),
+    0 1px 1px rgba(29, 29, 31, 0.05),
+    0 6px 14px -10px rgba(29, 29, 31, 0.2);
+}
+
+.calendar-day.has-session:hover {
+  background-color: rgba(255, 255, 255, 0.34);
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.12) 46%,
+    rgba(255, 255, 255, 0.34) 100%
+  );
+}
+
+/* 选中日：墨色玻璃珠，顶部镜面高光 + 底缘反光边 */
+.calendar-day[aria-pressed="true"] {
+  color: #fff;
+  background-color: #111113;
+  background-image: var(--surface-ink);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 2px 4px -2px rgba(255, 255, 255, 0.25),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.14),
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 8px 16px -10px rgba(0, 0, 0, 0.55);
+}
+
+.calendar-day[aria-pressed="true"]:hover {
+  background-color: #111113;
+  background-image: var(--surface-ink);
+}
+
+/* ============================================================
+   月历选择器：标题触发 + 年份切换 + 12 月网格
+   ============================================================ */
+.month-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: -8px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+  transition: background-color var(--month-duration) ease;
+}
+
+.month-trigger:hover,
+.month-trigger[data-state="open"] {
+  background-color: var(--month-hover-bg);
+}
+
+.month-caret {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--muted-foreground));
+  transition: transform var(--month-duration) ease;
+}
+
+.month-trigger[data-state="open"] .month-caret {
+  transform: rotate(180deg);
+}
+
+.month-pop {
+  width: var(--month-pop-width);
+  padding: 16px;
+  /* 浮层盖在日历上：填充加实，背景日期不许透进月份格 */
+  background-color: rgba(255, 255, 255, 0.93);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+/* 弹层只留材质，不参与面板扫光 */
+.month-pop::after {
+  display: none;
+}
+
+.month-year-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.month-year {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.month-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--month-nav-size);
+  height: var(--month-nav-size);
+  border-radius: 999px;
+  color: hsl(var(--muted-foreground));
+  transition: background-color var(--month-duration) ease,
+    color var(--month-duration) ease;
+}
+
+/* 视觉 36px，触控补到 44px；外扩层透明，不改变布局 */
+.month-nav-btn::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+}
+
+.month-nav-btn:hover:not(:disabled) {
+  background-color: var(--month-hover-bg);
+  color: hsl(var(--foreground));
+}
+
+.month-nav-btn:disabled {
+  color: var(--month-fg-disabled);
+  cursor: default;
+}
+
+.month-nav-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  padding-top: 12px;
+}
+
+.month-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--month-cell-height);
+  border-radius: 999px;
+  font-size: 13.5px;
+  color: hsl(var(--foreground));
+  transition: background-color var(--month-duration) ease,
+    color var(--month-duration) ease;
+}
+
+.month-cell:hover:not(:disabled):not([aria-pressed="true"]) {
+  background-color: var(--month-hover-bg);
+}
+
+.month-cell[aria-pressed="true"] {
+  font-weight: 600;
+  color: #fff;
+  background-color: #111113;
+  background-image: var(--surface-ink);
+  box-shadow: var(--surface-ink-shadow);
+}
+
+.month-cell:disabled {
+  color: var(--month-fg-disabled);
+}
+
+.day-panel {
+  padding: var(--panel-pad-y) var(--panel-pad-x);
+  /* 记录面板承载长备注，填充比日历再实一档 */
+  background-color: var(--glass-fill-text);
+}
+
+.day-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--glass-rule);
+}
+
+.day-title {
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.day-meta {
+  flex: none;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+.day-exercises {
+  padding-top: 2px;
+}
+
+.day-exercise {
+  padding: 12px 0;
+}
+
+.day-exercise + .day-exercise {
+  border-top: 1px solid rgba(29, 29, 31, 0.06);
+}
+
+.day-exercise-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.day-exercise-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.day-exercise-sets {
+  flex: none;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+}
+
+/* 组次明细：组序、引导线、次数各占固定列，备注单独换行，永远属于上一行 */
+.day-set-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-set {
+  display: grid;
+  grid-template-columns: 3.5em minmax(8px, 1fr) auto;
+  align-items: baseline;
+  column-gap: 8px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.day-set-index {
+  white-space: nowrap;
+}
+
+.day-set-leader {
+  align-self: center;
+  height: 1px;
+  border-bottom: 1px dotted rgba(29, 29, 31, 0.3);
+}
+
+.day-set-reps {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  white-space: nowrap;
+}
+
+.day-set-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: hsl(var(--muted-foreground));
+  overflow-wrap: anywhere;
+}
+
+/* RIR 胶囊：与选中日同一套墨色玻璃语言 */
+.badge-ink {
+  background-image: var(--surface-ink);
+  color: #fff;
+  line-height: 1.5;
+  box-shadow: var(--surface-ink-shadow);
+}
+
+.day-note {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-rule);
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: hsl(var(--foreground));
+  overflow-wrap: anywhere;
+}
+
+/* 空月份提示：面板里只有一句话，不需要再画分隔线 */
+.day-panel > .day-note.is-empty:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.day-note.is-empty {
+  color: hsl(var(--muted-foreground));
+}
+
+.day-note .badge-ink {
+  margin-left: 8px;
+  vertical-align: 1px;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --panel-pad-x: 24px;
+    --panel-pad-y: 24px;
+  }
+
+  .calendar-panel {
+    padding: var(--panel-pad-y) 20px 20px;
+  }
+}
+
+@media (min-width: 900px) {
+  :root {
+    --panel-pad-x: 28px;
+    --panel-pad-y: 28px;
+  }
+
+  .calendar-panel {
+    padding: var(--panel-pad-y) 22px 22px;
+  }
+}
+
+@media (max-width: 719px) {
+  :root {
+    --month-nav-size: 44px;
+  }
+
+  .bed .blob-2 {
+    display: none;
+  }
+}
+
+/* 320px 窄屏：日期保持圆形，哪怕让出一点触控面积 */
+@media (max-width: 359px) {
+  .calendar-day {
+    width: 38px;
+    height: 38px;
+    font-size: 13.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bed .blob-1,
+  .bed .blob-2,
+  .bed .blob-3 {
+    animation: none;
+  }
+
+  .glass-panel::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* 弹层与箭头直接落位，不做淡入/翻转 */
+  .month-pop {
+    animation: none;
+  }
+
+  .month-caret {
+    transition: none;
+  }
+
+  .chat-pending-dot {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ============================================================
+   液态玻璃按钮（参数取 liquid-glass-web/showcase.html）
+   静置：外投影 + 底部内阴影撑出厚度
+   按压：transform 由 useJellyPress 做果冻压扁与弹簧回弹
+   亮色环境下把投影与辉光按比例减弱，结构保持一致
+   ============================================================ */
+@layer components {
+  .lg-surface {
+    position: relative;
+    transform-origin: 50% 50%;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    will-change: transform;
+    box-shadow:
+      0 1px 2px rgba(29, 29, 31, 0.06),
+      0 -4px 10px inset rgba(29, 29, 31, 0.04);
+    transition:
+      box-shadow 180ms ease,
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease;
+  }
+
+  /* 按压只给一层贴着边缘的薄光，不外扩 */
+  .lg-surface[data-pressed="true"] {
+    transition: box-shadow 80ms ease;
+    box-shadow:
+      0 1px 2px rgba(29, 29, 31, 0.06),
+      0 -4px 10px inset rgba(29, 29, 31, 0.04),
+      inset 0 0 4px rgba(255, 255, 255, 0.28),
+      inset 0 -4px 8px rgba(29, 29, 31, 0.08);
+  }
+}
+
+/* ============================================================
+   训练问答：一块承载长文本的玻璃面
+   填充比日历面板更实，扫光关闭，保证正文对比度
+   ============================================================ */
+.chat-page {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: 24px 16px 16px;
+}
+
+.chat-column {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  width: 100%;
+  max-width: 840px;
+  margin-inline: auto;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+}
+
+.chat-head-title {
+  min-width: 0;
+}
+
+.chat-head-sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+}
+
+/* 页头只读展示当前模型；配置入口在侧栏底部 */
+.chat-model-chip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 12rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-model-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px;
+  line-height: 1.4;
+}
+
+@media (min-width: 960px) {
+  .chat-page {
+    padding: 40px 28px 32px;
+  }
+}
+
+.chat-panel {
+  background-color: var(--glass-fill-solid);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+.chat-log {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.chat-empty {
+  /* 空状态是这一屏唯一内容，垂直居中而不是贴顶 */
+  margin: auto;
+  max-width: 34rem;
+  padding-block: 24px;
+  text-align: center;
+}
+
+.chat-empty-lead {
+  font-size: 14px;
+  line-height: 1.8;
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* 用户消息：墨色玻璃，跟随玻璃语言的那一块唯一的深色 */
+.chat-bubble {
+  max-width: 85%;
+  margin-left: auto;
+  padding: 8px 14px;
+  border-radius: 18px 18px 6px 18px;
+  background-color: var(--ink);
+  background-image: linear-gradient(180deg, #3a3a3c 0%, #1d1d1f 52%, #111113 100%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 1px 2px rgba(0, 0, 0, 0.18),
+    0 8px 18px -14px rgba(0, 0, 0, 0.5);
+}
+
+/* 回答：安静的白玻璃，与用户消息形成清晰的阅读层级 */
+.chat-answer {
+  max-width: 92%;
+  margin-right: auto;
+  padding: 12px 14px;
+  border: 1px solid rgba(29, 29, 31, 0.07);
+  border-radius: 6px 18px 18px 18px;
+  background-color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.chat-answer.is-pending {
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-pending-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  vertical-align: middle;
+  animation: chat-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes chat-pulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+}
+
+.chat-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid hsl(var(--destructive) / 0.26);
+  border-radius: 14px;
+  background-color: hsl(var(--destructive) / 0.06);
+  color: hsl(var(--destructive));
+  font-size: 12.5px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.chat-composer {
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--glass-rule);
+}
+
+.chat-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  border-radius: 14px;
+  background-color: rgba(255, 255, 255, 0.72);
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.chat-input-wrap:hover {
+  border-color: rgba(29, 29, 31, 0.18);
+}
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  max-height: 168px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: hsl(var(--foreground));
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.chat-input::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-input:focus-visible {
+  outline: none;
+}
+
+.chat-input-action {
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.chat-send:disabled,
+.chat-send[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 模型设置弹层：与对话面板同一档玻璃 */
+.glass-dialog {
+  background-color: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+.model-row {
+  display: flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  text-align: left;
+  transition: background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.model-row:hover {
+  background-color: rgba(255, 255, 255, 0.62);
+}
+
+.model-row[aria-pressed="true"] {
+  background-color: rgba(29, 29, 31, 0.06);
+  border-color: rgba(29, 29, 31, 0.1);
+}
+
+.model-row[aria-pressed="true"] .model-row-name {
+  font-weight: 600;
+}
+
+.model-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+
+.model-row-id {
+  flex: none;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.model-row[aria-disabled="true"] {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.model-row[aria-disabled="true"]:hover {
+  background-color: transparent;
+}
+
+/* ============================================================
+   配置面板：分区 tabs、列表分组、密钥行
+   选中态只用背景加深与字重，不加描边（照 pi-web 的表达方式）
+   ============================================================ */
+.settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 18px;
+  border-bottom: 1px solid var(--glass-rule);
+}
+
+.settings-tab {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 96px;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+  transition: color var(--dur-fast) ease;
+}
+
+.settings-tab:hover {
+  color: var(--ink);
+}
+
+.settings-tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.settings-tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -1px;
+  width: 24px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  transform: translateX(-50%);
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-section-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-count {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-segment {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.settings-segment-btn {
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 8px;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.settings-segment-btn:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+.settings-segment-btn[aria-pressed="true"] {
+  background-color: rgba(29, 29, 31, 0.06);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.settings-filter,
+.settings-input {
+  width: 100%;
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  outline: none;
+  transition:
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.settings-filter {
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.settings-input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+}
+
+.settings-filter:focus-visible,
+.settings-input:focus-visible {
+  border-color: rgba(29, 29, 31, 0.25);
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.08);
+}
+
+.settings-input-invalid,
+.settings-input-invalid:focus-visible {
+  border-color: hsl(var(--destructive) / 0.6);
+}
+
+.settings-input-secret {
+  padding-right: 40px;
+}
+
+.settings-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid var(--glass-rule);
+  border-radius: 16px;
+  padding: 4px;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.settings-empty {
+  padding: 12px;
+  font-size: 11.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.model-group-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px 3px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+section + section > .model-group-title {
+  border-top: 1px solid var(--glass-rule);
+}
+
+.model-group-flag {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background-color: rgba(29, 29, 31, 0.06);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.connection-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+}
+
+.connection-row + .connection-row {
+  border-top: 1px solid var(--glass-rule);
+}
+
+.connection-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.connection-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(29, 29, 31, 0.22);
+}
+
+.connection-status[data-on="true"] .status-dot {
+  background: var(--ink);
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.08);
+}
+
+.secret-field {
+  position: relative;
+  display: flex;
+  min-width: 0;
+}
+
+.secret-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  transform: translateY(-50%);
+  border-radius: 8px;
+  color: hsl(var(--muted-foreground));
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.secret-toggle:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+.connection-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connection-save,
+.connection-remove {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    opacity var(--dur-fast) ease;
+}
+
+.connection-save {
+  background: var(--surface-ink);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--surface-ink-shadow);
+}
+
+.connection-save:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.connection-remove {
+  border: 1px solid rgba(29, 29, 31, 0.1);
+  color: hsl(var(--muted-foreground));
+}
+
+.connection-remove:hover {
+  color: hsl(var(--destructive));
+  border-color: hsl(var(--destructive) / 0.4);
+}
+
+.connection-error {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: hsl(var(--destructive));
+}
+
+.settings-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-rule);
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.settings-field-label {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: hsl(var(--muted-foreground));
+}
+
+.settings-input-area {
+  height: auto;
+  min-height: 76px;
+  padding: 10px 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* 添加 Provider：虚线整行按钮，与 pi-web 的 config-list-action 同形 */
+.connection-add {
+  padding-top: 4px;
+  border-top: 1px solid var(--glass-rule);
+}
+
+.connection-add-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 40px;
+  border: 1px dashed rgba(29, 29, 31, 0.22);
+  border-radius: 12px;
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.connection-add-btn:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  border-color: rgba(29, 29, 31, 0.34);
+  color: var(--ink);
+}
+
+/* 自定义端点表单 */
+.custom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--glass-rule);
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* 添加 Provider 浮层：盖在配置面板之上，仍在同一层焦点陷阱里 */
+.picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background-color: rgba(29, 29, 31, 0.26);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+.picker-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(72vh, 100%);
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+  border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+  box-shadow: var(--glass-shadow);
+}
+
+.picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--glass-rule);
+  color: hsl(var(--muted-foreground));
+}
+
+.picker-search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  color: var(--ink);
+  outline: none;
+}
+
+.picker-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 8px;
+}
+
+.picker-group-title {
+  grid-column: 1 / -1;
+  padding-top: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.picker-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--glass-rule);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.5);
+  text-align: left;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
+}
+
+.picker-card:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  border-color: rgba(29, 29, 31, 0.2);
+}
+
+.picker-card-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.picker-card-name {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.picker-card-sub {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  color: hsl(var(--muted-foreground));
+}
+
+.picker-card-mark,
+.picker-card-plus {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background-color: rgba(29, 29, 31, 0.06);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+}
+
+.picker-card-plus {
+  border: 1px dashed rgba(29, 29, 31, 0.22);
+  background-color: transparent;
+  font-size: 14px;
+}
+
+.picker-notice {
+  padding: 10px 14px;
+  border-top: 1px solid var(--glass-rule);
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+/* 全站不出滚动条，滚动能力保留 */
+* {
+  scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* ============================================================
+   侧栏：液态玻璃导轨
+   选中指示器是一块会滑动的玻璃片，由 GSAP 写 x / y / width / height
+   ============================================================ */
+.sidebar-shell {
+  border-radius: 26px;
+}
+
+/* 移动端抽屉：盖在页面内容上，需要更实的底与更大的模糊，避免文字透上来 */
+.glass-drawer {
+  background-color: rgba(252, 252, 253, 0.88);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+}
+
+/* 抽屉盖在内容上，扫光会变成一团白晕，关掉 */
+.glass-drawer::after {
+  display: none;
+}
+
+.sidebar-brand-row {
+  transition: gap 260ms ease;
+}
+
+/* 折叠时只留图标：文字靠 max-width 收起，不改变条目高度 */
+.sidebar-label {
+  display: block;
+  max-width: 220px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 320ms ease 50ms,
+    opacity 200ms ease 110ms;
+}
+
+.sidebar-shell[data-state="collapsed"] .sidebar-label {
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    max-width 240ms ease,
+    opacity 100ms ease;
+}
+
+.sidebar-shell[data-state="collapsed"] .sidebar-brand-row {
+  justify-content: center;
+  gap: 0;
+  padding-inline: 0;
+}
+
+/* 收起态只剩图标按钮居中：栏宽放不下珠子加按钮两枚 */
+.sidebar-shell[data-state="collapsed"] .sidebar-orb {
+  display: none;
+}
+
+.sidebar-icon-btn {
+  color: rgba(29, 29, 31, 0.6);
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.sidebar-icon-btn:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+.sidebar-orb {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 13px;
+  color: #fff;
+  background:
+    radial-gradient(
+      120% 120% at 30% 16%,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0) 44%
+    ),
+    linear-gradient(165deg, #4b4b4d 0%, #1d1d1f 46%, #08080a 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.12),
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 10px 20px -12px rgba(0, 0, 0, 0.6);
+  will-change: transform;
+}
+
+.sidebar-menu-button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 12px;
+  border-radius: 17px;
+  color: rgba(29, 29, 31, 0.74);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease;
+}
+
+.sidebar-menu-button:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+.sidebar-menu-button[data-active="true"],
+.sidebar-menu-button[data-active="true"]:hover {
+  color: var(--ink);
+  background-color: transparent;
+}
+
+.sidebar-menu-button[data-active="true"] .sidebar-label-desc {
+  color: rgba(29, 29, 31, 0.52);
+}
+
+.sidebar-nav-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.sidebar-dot {
+  flex: none;
+  width: 5px;
+  height: 5px;
+  margin-right: 2px;
+  border-radius: 999px;
+  background: var(--ink);
+  opacity: 0.72;
+}
+
+.sidebar-shell[data-state="collapsed"] .sidebar-menu-button {
+  justify-content: center;
+  gap: 0;
+  padding-inline: 0;
+}
+
+.sidebar-collapse-arrow {
+  transform-origin: 10.6px 9px;
+  transition: transform 300ms ease;
+}
+
+.sidebar-shell[data-state="collapsed"] .sidebar-collapse-arrow {
+  transform: rotate(180deg);
+}
+
+/* 会滑动的选中玻璃片：静态几何由 GSAP 写，这里只管材质 */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: 17px;
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(246, 246, 248, 0.94) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(29, 29, 31, 0.05),
+    0 0 0 1px rgba(29, 29, 31, 0.05),
+    0 1px 2px rgba(29, 29, 31, 0.06),
+    0 8px 20px -14px rgba(29, 29, 31, 0.45);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: transform, width, height;
+}
+
+.nav-indicator::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 5px;
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0.72;
+  transform: translateY(-50%);
+  transition: opacity 180ms ease;
+}
+
+.sidebar-shell[data-state="collapsed"] .nav-indicator::before {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-label,
+  .sidebar-brand-row,
+  .sidebar-collapse-arrow {
+    transition: none;
+  }
+}

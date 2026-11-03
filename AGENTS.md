@@ -7,7 +7,7 @@
 | 文件 | 角色 |
 |---|---|
 | `训练快照.json` | 训练中的临时记录，逐组追加，状态 `idle` / `recording` / `done` |
-| `训练日志.json` | 正式记录，唯一事实源，看板 `src/data/train.ts` 直接 import |
+| `训练日志.json` | 正式记录，唯一事实源，看板经 `src/features/training-log/api/` 运行时 fetch |
 | `训练日志.schema.json` | 正式记录结构契约 |
 | `训练快照.schema.json` | 快照结构契约 |
 | `scripts/training_log.py` | 录入、校验、合并的命令行工具 |
@@ -71,8 +71,10 @@ idle --「开始今日的街健」--> recording --「练完了」--> 合并入�
 ## 硬性约束
 
 - 训练未结束时不得写入 `训练日志.json`。
-- 不改两份 schema 的结构。结构确需调整时先改 schema，再改数据与 `src/data/train.ts` 的类型。
-- 不碰 `src/` 下的渲染逻辑，看板由设计计划驱动。
+- 不改两份 schema 的结构。结构确需调整时先改 schema，再改数据与 `src/features/training-log/model/trainingLog.ts` 的类型。
+- 前端按 feature 分目录，后端按 domain / application / infrastructure 分层；跨层调用只走端口。
+- 页面切换统一走 `src/app/router.ts` 的哈希路由，侧栏条目在 `src/app/AppSidebar.tsx` 注册；不要为新页面另开 HTML 入口。
+- 侧栏交互保持现有动效语言：路径/指示器用 GSAP，按压用 `useJellyPress`，`prefers-reduced-motion` 下直出。
 - 组数、次数必须是正整数；`note` 可为空字符串，不允许省略字段。
 
 ## 常用命令
