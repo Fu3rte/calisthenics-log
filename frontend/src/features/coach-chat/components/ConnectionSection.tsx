@@ -1,6 +1,6 @@
 /**
  * 连接区：已配置的 provider 列表 + 「添加 Provider」浮层 + 自定义端点表单。
- * 密钥写服务端项目根 .env，接口只回掩码；列表只显示已配置的家与刚选中待填的那一家。
+ * 密钥写服务端 backend/.env，接口只回掩码；列表只显示已配置的家与刚选中待填的那一家。
  */
 import { useEffect, useRef, useState } from "react";
 import { CustomProviderForm } from "@/features/coach-chat/components/CustomProviderForm";
@@ -11,7 +11,7 @@ import type { ProviderCredential } from "@/features/coach-chat/model/chat";
 import { Hint } from "@/shared/ui/hint";
 
 const SOURCE_TEXT = {
-  file: "项目根 .env",
+  file: "backend/.env",
   system: "系统环境变量",
   pi: "本机 pi 登录态",
 } as const;

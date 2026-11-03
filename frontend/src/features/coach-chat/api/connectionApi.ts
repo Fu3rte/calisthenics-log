@@ -1,5 +1,5 @@
 /**
- * provider 连接配置读写：密钥只存服务端项目根 .env，前端只拿掩码，绝不回显明文。
+ * provider 连接配置读写：密钥只存服务端 backend/.env，前端只拿掩码，绝不回显明文。
  */
 import type { ProviderCredential } from "@/features/coach-chat/model/chat";
 

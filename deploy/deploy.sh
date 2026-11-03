@@ -12,7 +12,7 @@ mkdir -p .deploy
 rm -f .deploy/dist.tar.gz
 
 npm run build
-tar -czf .deploy/dist.tar.gz -C dist .
+tar -czf .deploy/dist.tar.gz -C frontend/dist .
 scp -q .deploy/dist.tar.gz "$SERVER:$REMOTE_DIR/incoming/dist.tar.gz"
 
 ssh "$SERVER" REMOTE_DIR="$REMOTE_DIR" KEEP="$KEEP" 'bash -s' <<'REMOTE'

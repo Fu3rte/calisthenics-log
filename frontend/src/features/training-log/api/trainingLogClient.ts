@@ -1,7 +1,7 @@
 /**
  * 训练日志读取适配器（浏览器）。
  *
- * 同源 fetch 训练日志.json：构建时由 vite 插件拷进 dist，
+ * 同源 fetch 训练日志.json：dev 由 vite 中间件从 backend/ 读，build 拷进 dist，
  * 线上改完 JSON 刷新即生效。
  */
 import {

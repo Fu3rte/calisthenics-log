@@ -129,7 +129,7 @@ export class PiCoachModel implements CoachModel {
     const apiKey = await this.credentials.resolveApiKey(providerId);
     if (!apiKey) {
       throw new MissingCredentialError(
-        `未配置 ${registered.label} 密钥：在侧栏「模型配置 › 连接」填入，或写进项目根 .env`
+        `未配置 ${registered.label} 密钥：在侧栏「模型配置 › 连接」填入，或写进 backend/.env`
       );
     }
 

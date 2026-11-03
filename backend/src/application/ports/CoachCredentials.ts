@@ -1,6 +1,6 @@
 /**
  * 出站端口：provider 密钥的读写与解析。
- * 密钥只活在服务端进程与项目根 .env 里，HTTP 层只允许拿掩码。
+ * 密钥只活在服务端进程与 backend/.env 里，HTTP 层只允许拿掩码。
  */
 
 export interface ProviderCredential {
@@ -19,7 +19,7 @@ export interface ProviderCredential {
 
 export interface CoachCredentials {
   list(): Promise<readonly ProviderCredential[]>;
-  /** 写入项目根 .env 并让当前进程立刻生效 */
+  /** 写入 backend/.env 并让当前进程立刻生效 */
   save(provider: string, apiKey: string): Promise<readonly ProviderCredential[]>;
   remove(provider: string): Promise<readonly ProviderCredential[]>;
   /** 发起请求时取明文密钥；没有则 undefined */

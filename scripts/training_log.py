@@ -15,7 +15,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent / "backend"
 LOG = ROOT / "训练日志.json"
 SNAP = ROOT / "训练快照.json"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")

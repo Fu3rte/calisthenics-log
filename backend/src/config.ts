@@ -14,10 +14,10 @@ export interface AppConfig {
   readonly piAuthPath: string;
 }
 
-export function repoRoot(): string {
-  /* 编译产物位于 server/dist，向上两级是仓库根 */
+export function backendRoot(): string {
+  /* 编译产物位于 backend/dist，上一级即后端包根：数据、.env、providers.json 都在这 */
   const here = path.dirname(fileURLToPath(import.meta.url));
-  return path.resolve(here, "../..");
+  return path.resolve(here, "..");
 }
 
 export function loadConfig(): AppConfig {
@@ -26,11 +26,11 @@ export function loadConfig(): AppConfig {
     port: Number(process.env.CHAT_PORT ?? 8787),
     modelId: process.env.CHAT_MODEL ?? "deepseek/deepseek-v4-pro",
     maxTokens: Number(process.env.CHAT_MAX_TOKENS ?? 900),
-    trainingLogPath: path.join(repoRoot(), "训练日志.json"),
+    trainingLogPath: path.join(backendRoot(), "训练日志.json"),
     /* 密钥集中在这一个文件，面板写它，进程启动时灌进环境变量 */
-    envPath: path.join(repoRoot(), ".env"),
+    envPath: path.join(backendRoot(), ".env"),
     /* 自定义兼容端点的定义，本机数据，不含密钥 */
-    providersJsonPath: path.join(repoRoot(), "providers.json"),
+    providersJsonPath: path.join(backendRoot(), "providers.json"),
     piAuthPath: path.join(os.homedir(), ".pi", "agent", "auth.json"),
   };
 }

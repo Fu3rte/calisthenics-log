@@ -1,5 +1,5 @@
 /**
- * 入站适配器之外的凭证适配器：密钥写进项目根 .env，读时只出掩码。
+ * 入站适配器之外的凭证适配器：密钥写进 backend/.env，读时只出掩码。
  * 本机 pi 的登录态（auth.json）作为兜底来源，顺序：.env → 系统环境变量 → pi。
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -43,7 +43,7 @@ export class EnvCredentials implements CoachCredentials {
 
   constructor(private readonly options: EnvCredentialsOptions) {}
 
-  /** 启动时把项目根 .env 灌进 process.env；文件不存在就跳过 */
+  /** 启动时把 backend/.env 灌进 process.env；文件不存在就跳过 */
   load(): void {
     if (!existsSync(this.options.envPath)) return;
     for (const { envVar } of this.options.registry.credentialTargets()) {

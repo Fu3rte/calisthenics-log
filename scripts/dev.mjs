@@ -6,7 +6,13 @@
  *   npm run dev:api           只跑问答后端
  *   npm run preview           预览构建产物（同样带 /api 代理）
  */
+import path from "node:path";
 import { spawn, spawnSync } from "node:child_process";
+
+// 子进程的 cwd 各指向前端包，脚本路径一律给绝对值
+const root = path.resolve(import.meta.dirname, "..");
+const tscBin = path.join(root, "node_modules/typescript/bin/tsc");
+const viteBin = path.join(root, "node_modules/vite/bin/vite.js");
 
 const flags = new Set(process.argv.slice(2));
 const preview = flags.has("--preview");
@@ -14,7 +20,7 @@ const apiOnly = flags.has("--api-only");
 
 const tsc = spawnSync(
   process.execPath,
-  ["./node_modules/typescript/bin/tsc", "-p", "server/tsconfig.json"],
+  [tscBin, "-p", path.join(root, "backend/tsconfig.json")],
   { stdio: "inherit" }
 );
 if (tsc.status !== 0) process.exit(tsc.status ?? 1);
@@ -22,8 +28,8 @@ if (tsc.status !== 0) process.exit(tsc.status ?? 1);
 const children = [];
 let closing = false;
 
-function run(args) {
-  const child = spawn(process.execPath, args, { stdio: "inherit", env: process.env });
+function run(args, cwd = root) {
+  const child = spawn(process.execPath, args, { stdio: "inherit", env: process.env, cwd });
   child.on("error", (error) => {
     console.error(error.message);
     stop(1);
@@ -42,15 +48,12 @@ function stop(code) {
 process.on("SIGINT", () => stop(0));
 process.on("SIGTERM", () => stop(0));
 
-const api = run(["server/dist/main.js"]);
+const api = run([path.join(root, "backend/dist/main.js")]);
 api.on("exit", (code) => {
   if (!closing && code) stop(code);
 });
 
 if (!apiOnly) {
-  const vite = run([
-    "./node_modules/vite/bin/vite.js",
-    ...(preview ? ["preview"] : []),
-  ]);
+  const vite = run([viteBin, ...(preview ? ["preview"] : [])], path.join(root, "frontend"));
   vite.on("exit", (code) => stop(code ?? 0));
 }

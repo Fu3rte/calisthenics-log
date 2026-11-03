@@ -22,7 +22,7 @@ async function main(): Promise<void> {
   const customStore = new JsonCustomProviderStore(config.providersJsonPath);
   registry.setCustomProviders(await customStore.load());
 
-  /* 项目根 .env 先灌进进程，缺密钥不拦启动：对话时才报，面板里能当场补 */
+  /* backend/.env 先灌进进程，缺密钥不拦启动：对话时才报，面板里能当场补 */
   const credentials = new EnvCredentials({
     envPath: config.envPath,
     piAuthPath: config.piAuthPath,

@@ -1,5 +1,5 @@
 /**
- * 自定义 provider 定义的落盘：项目根 providers.json（已 gitignore，属本机数据）。
+ * 自定义 provider 定义的落盘：backend/providers.json（已 gitignore，属本机数据）。
  * 只存端点与模型 id，密钥一律走 .env，不进这个文件。
  */
 import { existsSync, writeFileSync } from "node:fs";

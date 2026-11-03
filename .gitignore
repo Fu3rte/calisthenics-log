@@ -1,20 +1,20 @@
 # 依赖与构建产物
 node_modules/
-dist/
-server/dist/
+frontend/dist/
+backend/dist/
 *.local
 
 # 本地训练数据（个人记录，不入库）
-训练日志.json
-训练快照.json
+backend/训练日志.json
+backend/训练快照.json
 
 # 服务商密钥（模型配置面板写入，绝不入库）
-.env
-.env.*
-!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
 
 # 自定义 provider 端点定义（本机数据，面板写入）
-providers.json
+backend/providers.json
 
 # 工作区私有文件与备份
 .workbuddy/
