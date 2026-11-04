@@ -8,24 +8,17 @@ import {
   type Server,
   type ServerResponse,
 } from "node:http";
-import type { AskCoach } from "../../application/AskCoach.js";
+import { Readable } from "node:stream";
+import type { AskCoach, PreparedRequest } from "../../application/AskCoach.js";
 import type { CoachSetup } from "../../application/CoachSetup.js";
-import {
-  CredentialKeyInvalidError,
-  CredentialProviderUnknownError,
-} from "../../application/ports/CoachCredentials.js";
-import { CoachSettingsInvalidError } from "../../domain/coaching/CoachSettings.js";
-import type { CoachSettings } from "../../domain/coaching/CoachSettings.js";
-import { CustomProviderInvalidError } from "../../domain/coaching/CustomProviders.js";
-import { CoachTurnInvalidError } from "../../domain/coaching/CoachTurn.js";
-import type { CoachTurn } from "../../domain/coaching/CoachTurn.js";
+import type { CoachCredentials } from "../../application/ports/CoachCredentials.js";
+import { BadRequestError } from "../../domain/BadRequest.js";
 import { openEventStream, writeEvent } from "./sse.js";
-
-const MAX_BODY = 64 * 1024;
 
 export interface ChatServerOptions {
   readonly askCoach: AskCoach;
   readonly setup: CoachSetup;
+  readonly credentials: CoachCredentials;
   readonly host: string;
   readonly port: number;
 }
@@ -35,22 +28,26 @@ function sendJson(res: ServerResponse, status: number, payload: unknown): void {
   res.end(JSON.stringify(payload));
 }
 
+/** 方法不符时已回 405，调用方直接 return */
+function requireMethod(
+  req: IncomingMessage,
+  res: ServerResponse,
+  method: string
+): boolean {
+  if (req.method === method) return true;
+  sendJson(res, 405, { error: "method not allowed" });
+  return false;
+}
+
+/** 入参非法原样带出消息，其余异常用兜底文案 */
+function sendInvalid(res: ServerResponse, cause: unknown, fallback: string): void {
+  const error = cause instanceof BadRequestError ? cause.message : fallback;
+  sendJson(res, 400, { error });
+}
+
+/** 服务只绑 127.0.0.1，唯一的调用方是本仓前端且已限单条 2000 字 */
 function readBody(req: IncomingMessage): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let size = 0;
-    req.on("data", (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > MAX_BODY) {
-        reject(new CoachTurnInvalidError("请求体过大"));
-        req.destroy();
-        return;
-      }
-      chunks.push(chunk);
-    });
-    req.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));
-    req.on("error", reject);
-  });
+  return new Response(Readable.toWeb(req)).text();
 }
 
 export class ChatServer {
@@ -66,54 +63,32 @@ export class ChatServer {
     const { host, port } = this.options;
     return new Promise((resolve, reject) => {
       this.server.once("error", reject);
-      this.server.listen(port, host, () => {
-        this.server.removeListener("error", reject);
-        resolve();
-      });
-    });
-  }
-
-  close(): Promise<void> {
-    return new Promise((resolve) => {
-      this.server.close(() => resolve());
+      this.server.listen(port, host, resolve);
     });
   }
 
   private async handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
 
-    if (url.pathname === "/api/health") {
-      if (req.method !== "GET") {
-        sendJson(res, 405, { error: "method not allowed" });
-        return;
-      }
-      sendJson(res, 200, {
+    const getRoutes: Record<string, () => unknown | Promise<unknown>> = {
+      "/api/health": () => ({
         ok: true,
         model: this.options.askCoach.defaults.modelId,
-      });
-      return;
-    }
-
-    if (url.pathname === "/api/models") {
-      if (req.method !== "GET") {
-        sendJson(res, 405, { error: "method not allowed" });
-        return;
-      }
-      sendJson(res, 200, await this.options.setup.catalog());
+      }),
+      "/api/models": () => this.options.setup.catalog(),
+      "/api/settings/providers": async () => ({
+        providers: await this.options.setup.picker(),
+      }),
+    };
+    const route = getRoutes[url.pathname];
+    if (route) {
+      if (!requireMethod(req, res, "GET")) return;
+      sendJson(res, 200, await route());
       return;
     }
 
     if (url.pathname === "/api/settings/connection") {
       await this.handleConnection(req, res);
-      return;
-    }
-
-    if (url.pathname === "/api/settings/providers") {
-      if (req.method !== "GET") {
-        sendJson(res, 405, { error: "method not allowed" });
-        return;
-      }
-      sendJson(res, 200, { providers: await this.options.setup.picker() });
       return;
     }
 
@@ -126,23 +101,13 @@ export class ChatServer {
       sendJson(res, 404, { error: "not found" });
       return;
     }
+    if (!requireMethod(req, res, "POST")) return;
 
-    if (req.method !== "POST") {
-      sendJson(res, 405, { error: "method not allowed" });
-      return;
-    }
-
-    let prepared: { turns: CoachTurn[]; settings: CoachSettings };
+    let prepared: PreparedRequest;
     try {
-      const body = await readBody(req);
-      prepared = this.options.askCoach.prepare(JSON.parse(body));
+      prepared = this.options.askCoach.prepare(JSON.parse(await readBody(req)));
     } catch (cause) {
-      const message =
-        cause instanceof CoachTurnInvalidError ||
-        cause instanceof CoachSettingsInvalidError
-          ? cause.message
-          : "请求体不是合法 JSON";
-      sendJson(res, 400, { error: message });
+      sendInvalid(res, cause, "请求体不是合法 JSON");
       return;
     }
 
@@ -176,47 +141,22 @@ export class ChatServer {
     res: ServerResponse
   ): Promise<void> {
     if (req.method === "GET") {
-      sendJson(res, 200, { providers: await this.options.setup.connection() });
+      sendJson(res, 200, { providers: await this.options.credentials.list() });
       return;
     }
-    if (req.method !== "PUT") {
-      sendJson(res, 405, { error: "method not allowed" });
-      return;
-    }
+    if (!requireMethod(req, res, "PUT")) return;
 
-    let provider: string;
-    let apiKey: string;
     try {
       const body = JSON.parse(await readBody(req)) as Record<string, unknown>;
-      if (typeof body.provider !== "string" || !body.provider.trim()) {
-        throw new CredentialProviderUnknownError("provider 不能为空");
-      }
       if (typeof body.apiKey !== "string") {
-        throw new CredentialKeyInvalidError("apiKey 必须是字符串，清空请传空串");
+        throw new BadRequestError("apiKey 必须是字符串，清空请传空串");
       }
-      provider = body.provider.trim();
-      apiKey = body.apiKey;
-    } catch (cause) {
-      const message =
-        cause instanceof CredentialProviderUnknownError ||
-        cause instanceof CredentialKeyInvalidError
-          ? cause.message
-          : "请求体不是合法的连接配置";
-      sendJson(res, 400, { error: message });
-      return;
-    }
-
-    try {
+      const provider = String(body.provider ?? "").trim();
       sendJson(res, 200, {
-        providers: await this.options.setup.updateConnection(provider, apiKey),
+        providers: await this.options.setup.updateConnection(provider, body.apiKey),
       });
     } catch (cause) {
-      const message =
-        cause instanceof CredentialProviderUnknownError ||
-        cause instanceof CredentialKeyInvalidError
-          ? cause.message
-          : "写入 .env 失败";
-      sendJson(res, 400, { error: message });
+      sendInvalid(res, cause, "写入 .env 失败");
     }
   }
 
@@ -241,16 +181,10 @@ export class ChatServer {
         });
         return;
       }
-      sendJson(res, 405, { error: "method not allowed" });
     } catch (cause) {
-      const message =
-        cause instanceof CustomProviderInvalidError ||
-        cause instanceof CoachSettingsInvalidError
-          ? cause.message
-          : cause instanceof SyntaxError
-            ? "请求体不是合法 JSON"
-            : "写入 providers.json 失败";
-      sendJson(res, 400, { error: message });
+      sendInvalid(res, cause, "写入 providers.json 失败");
+      return;
     }
+    sendJson(res, 405, { error: "method not allowed" });
   }
 }

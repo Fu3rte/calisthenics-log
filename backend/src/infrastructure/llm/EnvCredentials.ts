@@ -1,14 +1,12 @@
 /**
  * 入站适配器之外的凭证适配器：密钥写进 backend/.env，读时只出掩码。
- * 本机 pi 的登录态（auth.json）作为兜底来源，顺序：.env → 系统环境变量 → pi。
+ * 来源只有两处：本项目 .env 与系统环境变量，前者优先。
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import {
-  CredentialKeyInvalidError,
-  CredentialProviderUnknownError,
-  type CoachCredentials,
-  type ProviderCredential,
+import { BadRequestError } from "../../domain/BadRequest.js";
+import type {
+  CoachCredentials,
+  ProviderCredential,
 } from "../../application/ports/CoachCredentials.js";
 import type {
   CredentialTarget,
@@ -17,12 +15,7 @@ import type {
 
 export interface EnvCredentialsOptions {
   readonly envPath: string;
-  readonly piAuthPath: string;
   readonly registry: ProviderCatalog;
-}
-
-interface PiAuthFile {
-  readonly [providerId: string]: { readonly key?: unknown } | undefined;
 }
 
 /** 掩码：只保留末 4 位，其余打点；短于 8 位的全打点 */
@@ -31,110 +24,78 @@ function mask(apiKey: string): string {
   return `••••${apiKey.slice(-4)}`;
 }
 
-function isUsableKeyValue(value: unknown): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 export class EnvCredentials implements CoachCredentials {
-  /** 由本项目 .env 提供的环境变量名；用于区分来源与删除时还原系统值 */
+  /** 由本项目 .env 提供的环境变量名；用于区分来源 */
   private readonly fromFile = new Set<string>();
-  /** 加载 .env 之前这些变量的系统值，删除时还原回去 */
-  private readonly systemFallback = new Map<string, string | undefined>();
 
   constructor(private readonly options: EnvCredentialsOptions) {}
 
   /** 启动时把 backend/.env 灌进 process.env；文件不存在就跳过 */
   load(): void {
     if (!existsSync(this.options.envPath)) return;
-    for (const { envVar } of this.options.registry.credentialTargets()) {
-      if (process.env[envVar] !== undefined) {
-        this.systemFallback.set(envVar, process.env[envVar]);
-      }
-    }
     process.loadEnvFile(this.options.envPath);
     for (const { envVar } of this.options.registry.credentialTargets()) {
       if (process.env[envVar] !== undefined) this.fromFile.add(envVar);
     }
   }
 
-  private target(provider: string): CredentialTarget {
-    const found = this.options.registry
+  private mustTarget(provider: string): CredentialTarget {
+    const target = this.options.registry
       .credentialTargets()
       .find((item) => item.provider === provider);
-    if (!found) {
-      throw new CredentialProviderUnknownError(
+    if (!target) {
+      throw new BadRequestError(
         `不支持的 provider ${provider}：订阅登录与多字段端点在本机版本里不可填`
       );
     }
-    return found;
+    return target;
   }
 
   async list(): Promise<readonly ProviderCredential[]> {
-    const auth = await this.readPiAuth();
     return this.options.registry.credentialTargets().map((target) => {
-      const fromEnv = process.env[target.envVar]?.trim();
-      const piKey = auth[target.provider]?.key;
-      const fromPi = isUsableKeyValue(piKey) ? piKey.trim() : undefined;
-      const value = fromEnv || fromPi;
+      const value = process.env[target.envVar]?.trim();
       return {
         provider: target.provider,
         providerLabel: target.label,
         envVar: target.envVar,
         configured: Boolean(value),
         masked: value ? mask(value) : null,
-        source: fromEnv
-          ? this.fromFile.has(target.envVar)
-            ? "file"
-            : "system"
-          : fromPi
-            ? "pi"
-            : null,
-        custom: this.options.registry
-          .customProviders()
-          .some((item) => item.id === target.provider),
+        source: value ? (this.fromFile.has(target.envVar) ? "file" : "system") : null,
+        custom: target.custom,
       } satisfies ProviderCredential;
     });
   }
 
   async save(provider: string, apiKey: string): Promise<readonly ProviderCredential[]> {
-    const { envVar } = this.target(provider);
+    const target = this.mustTarget(provider);
     const value = apiKey.trim();
     if (!value) {
-      throw new CredentialKeyInvalidError("密钥不能为空");
+      throw new BadRequestError("密钥不能为空");
     }
     if (value.length > 400 || /[\r\n"']/.test(value)) {
-      throw new CredentialKeyInvalidError("密钥含换行或引号，长度也不超过 400");
+      throw new BadRequestError("密钥含换行或引号，长度也不超过 400");
     }
 
-    this.upsertEnvFile(envVar, value);
-    process.env[envVar] = value;
-    this.fromFile.add(envVar);
+    this.upsertEnvFile(target.envVar, value);
+    process.env[target.envVar] = value;
+    this.fromFile.add(target.envVar);
     return this.list();
   }
 
   async remove(provider: string): Promise<readonly ProviderCredential[]> {
-    const { envVar } = this.target(provider);
+    const { envVar } = this.mustTarget(provider);
 
     this.upsertEnvFile(envVar, null);
     this.fromFile.delete(envVar);
-    /* 系统环境变量里原本就有同名值时还原，不能顺手抹掉别人的配置 */
-    const fallback = this.systemFallback.get(envVar);
-    if (fallback === undefined) delete process.env[envVar];
-    else process.env[envVar] = fallback;
+    delete process.env[envVar];
     return this.list();
   }
 
   async resolveApiKey(provider: string): Promise<string | undefined> {
-    const targets = this.options.registry.credentialTargets();
-    const target = targets.find((item) => item.provider === provider);
-    if (!target) return undefined;
-
-    const fromEnv = process.env[target.envVar]?.trim();
-    if (fromEnv) return fromEnv;
-
-    const auth = await this.readPiAuth();
-    const fromPi = auth[target.provider]?.key;
-    return isUsableKeyValue(fromPi) ? fromPi.trim() : undefined;
+    const envVar = this.options.registry
+      .credentialTargets()
+      .find((item) => item.provider === provider)?.envVar;
+    return envVar ? process.env[envVar]?.trim() || undefined : undefined;
   }
 
   /** 就地改 .env：命中同名键则替换那一行，没有则追加；传 null 表示删除该行。其余行与注释原样保留 */
@@ -160,15 +121,5 @@ export class EnvCredentials implements CoachCredentials {
       encoding: "utf8",
       mode: 0o600,
     });
-  }
-
-  private async readPiAuth(): Promise<PiAuthFile> {
-    const raw = await readFile(this.options.piAuthPath, "utf8").catch(() => null);
-    if (raw === null) return {};
-    try {
-      return JSON.parse(raw) as PiAuthFile;
-    } catch {
-      return {};
-    }
   }
 }

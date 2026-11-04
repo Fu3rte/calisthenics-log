@@ -13,7 +13,7 @@
 ## 技术栈
 
 前端 React 19 · Vite 6 · TypeScript · Tailwind CSS 4 · shadcn/ui 风格组件 · GSAP
-后端 Node 22 · TypeScript · `@earendil-works/pi-ai`（DeepSeek）
+后端 Node 22 · TypeScript · `@earendil-works/pi-ai`（多 provider 模型适配）
 
 npm workspaces 单仓双包：`frontend/` 与 `backend/` 各持自己的 `package.json` 与依赖，根 `package.json` 只做 workspace 声明与编排脚本。
 
@@ -45,11 +45,11 @@ npm run dev:web    # 只起 Vite
 侧栏第二项，路由 `#/chat`。单页应用，切页不刷新，全站只有 `index.html` 一个入口。本地功能，不上服务器。
 
 - 后端 `backend/` 用 DDD 分层：`domain` 放聚合与规则，`application` 放用例与端口，`infrastructure` 放文件读写、pi-ai 适配与 HTTP。
-- provider 目录不写死名单：`backend/src/infrastructure/llm/providerRegistry.ts` 取 pi-ai 出厂的 42 家，按各家的 auth 能力分组，环境变量名由 `auth.apiKey.resolve()` 离线问出。默认 `deepseek/deepseek-v4-pro`，`CHAT_MODEL` 用 `provider/model` 覆盖。
+- provider 目录不写死名单：`backend/src/infrastructure/llm/providerRegistry.ts` 取 pi-ai 出厂的 42 家，按各家的 auth 能力分组，环境变量名由 `auth.apiKey.resolve()` 离线问出。默认模型也不写死：`CHAT_MODEL` 以 `provider/model` 指定，未设置时前端取清单里第一个已配置 provider 的模型。
 - 侧栏底部「模型配置」条目开配置面板，分三区：模型（provider 分组 + 筛选 + 当前/全部范围）、参数（回复上限）、连接（已配置的 provider + 添加 Provider）。模型清单只下发已配置 provider 的家，未配置的走添加流程；模型与上限存浏览器 `localStorage`，每次请求随 `settings` 带上，服务端按 128–4000 与模型白名单校验。
 - 「添加 Provider」浮层三档：自定义（OpenAI / Anthropic 兼容端点）、订阅服务（OAuth，只读标注本机不接登录流）、API KEY（逐家列模型数，点选后回到连接区聚焦密钥框）。双认证的家在订阅服务与 API KEY 各出现一次。
-- 密钥只写 `backend/.env`（已 gitignore），来源顺序 `.env` → 系统环境变量 → `~/.pi/agent/auth.json`。面板与接口只回掩码（末 4 位），浏览器不保存密钥；换密钥不用重启，下一次请求即生效。自定义端点的定义写 `backend/providers.json`（同为 gitignore 的本机数据，只存端点与模型 id，不存密钥），删除端点会连带抹掉它在 `.env` 里的那一行。
-- Bedrock、Azure、Vertex、Cloudflare 网关与 Workers AI 需要 region / resource / account 等额外字段，typesafe 只有分类器模型，这六家不进列表。
+- 密钥只写 `backend/.env`（已 gitignore），读取顺序 `.env` → 系统环境变量，前者优先，不读其他工具的登录态。面板与接口只回掩码（末 4 位），浏览器不保存密钥；换密钥不用重启，下一次请求即生效。自定义端点的定义写 `backend/providers.json`（同为 gitignore 的本机数据，只存端点与模型 id，不存密钥），删除端点会连带抹掉它在 `.env` 里的那一行。
+- Bedrock、Azure、Vertex、Cloudflare 网关与 Workers AI 需要 region / resource / account 等额外字段，这五家不进列表；只有分类器模型的家（如 typesafe）由「零模型不进列表」这条规则挡掉。
 - 每轮请求重新读取 `backend/训练日志.json` 拼进 system prompt，改完数据下一句就生效。
 - 会话存在浏览器 `localStorage`，最多带 12 轮；单条输入上限 2000 字，回复上限默认 900 tokens。
 

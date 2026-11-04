@@ -6,13 +6,13 @@
  */
 import { buildSystemPrompt } from "../domain/coaching/CoachPrompt.js";
 import {
-  CoachSettingsInvalidError,
   parseSettings,
   type CoachSettings,
 } from "../domain/coaching/CoachSettings.js";
 import { parseTurns, type CoachTurn } from "../domain/coaching/CoachTurn.js";
+import { BadRequestError } from "../domain/BadRequest.js";
 import type { TrainingLogRepository } from "../domain/training/TrainingLogRepository.js";
-import type { CoachModel, CoachModelOption } from "./ports/CoachModel.js";
+import type { CoachModel } from "./ports/CoachModel.js";
 
 export type CoachEvent =
   | { readonly type: "delta"; readonly text: string }
@@ -23,7 +23,6 @@ export interface AskCoachDeps {
   readonly trainingLogs: TrainingLogRepository;
   readonly coachModel: CoachModel;
   readonly defaults: CoachSettings;
-  readonly now?: () => Date;
 }
 
 export interface PreparedRequest {
@@ -38,27 +37,22 @@ export class AskCoach {
     return this.deps.defaults;
   }
 
-  get catalog(): readonly CoachModelOption[] {
-    return this.deps.coachModel.catalog();
-  }
-
   /**
    * 同步校验请求体：轮次、设置、模型是否在清单内。
-   * 非法时抛 CoachTurnInvalidError / CoachSettingsInvalidError，HTTP 层据此回 400。
+   * 非法时抛 BadRequestError，HTTP 层据此回 400。
    */
   prepare(raw: unknown): PreparedRequest {
     const turns = parseTurns(raw);
-    const rawSettings =
-      raw && typeof raw === "object"
-        ? (raw as Record<string, unknown>).settings
-        : undefined;
-    const settings = parseSettings(rawSettings, this.deps.defaults);
+    const settings = parseSettings(
+      (raw as { settings?: unknown }).settings,
+      this.deps.defaults
+    );
 
     const known = this.deps.coachModel
       .catalog()
       .some((option) => option.id === settings.modelId);
     if (!known) {
-      throw new CoachSettingsInvalidError(`未知模型 ${settings.modelId}`);
+      throw new BadRequestError(`未知模型 ${settings.modelId}`);
     }
 
     return { turns, settings };
@@ -69,11 +63,9 @@ export class AskCoach {
     settings: CoachSettings,
     signal: AbortSignal
   ): AsyncGenerator<CoachEvent, void, void> {
-    const now = this.deps.now ?? (() => new Date());
-
     try {
       const log = await this.deps.trainingLogs.load();
-      const systemPrompt = buildSystemPrompt(log, now());
+      const systemPrompt = buildSystemPrompt(log, new Date());
 
       for await (const text of this.deps.coachModel.stream({
         systemPrompt,

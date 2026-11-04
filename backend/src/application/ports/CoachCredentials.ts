@@ -11,8 +11,8 @@ export interface ProviderCredential {
   readonly configured: boolean;
   /** 已配置时的掩码，未配置为 null；任何情况下都不是明文 */
   readonly masked: string | null;
-  /** 命中的来源：项目 .env / 系统环境变量 / 本机 pi 登录态 */
-  readonly source: "file" | "system" | "pi" | null;
+  /** 命中的来源：项目 .env / 系统环境变量 */
+  readonly source: "file" | "system" | null;
   /** 自定义兼容端点（providers.json 里的家），面板上可删 */
   readonly custom: boolean;
 }
@@ -24,18 +24,4 @@ export interface CoachCredentials {
   remove(provider: string): Promise<readonly ProviderCredential[]>;
   /** 发起请求时取明文密钥；没有则 undefined */
   resolveApiKey(provider: string): Promise<string | undefined>;
-}
-
-export class CredentialProviderUnknownError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "CredentialProviderUnknownError";
-  }
-}
-
-export class CredentialKeyInvalidError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "CredentialKeyInvalidError";
-  }
 }

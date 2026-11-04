@@ -8,8 +8,8 @@ import {
   parseCustomProvider,
   type CustomProvider,
 } from "../domain/coaching/CustomProviders.js";
+import { BadRequestError } from "../domain/BadRequest.js";
 import type { CoachSettings } from "../domain/coaching/CoachSettings.js";
-import { CoachSettingsInvalidError } from "../domain/coaching/CoachSettings.js";
 import type {
   CoachCredentials,
   ProviderCredential,
@@ -49,15 +49,15 @@ export class CoachSetup {
 
   async catalog(): Promise<CoachCatalog> {
     const credentials = await this.deps.credentials.list();
-    const configured = new Map(
-      credentials.map((item) => [item.provider, item.configured])
+    const configured = new Set(
+      credentials.filter((item) => item.configured).map((item) => item.provider)
     );
 
     return {
       providers: this.deps.coachModel.providers(),
       models: this.deps.coachModel
         .catalog()
-        .filter((option) => configured.get(option.provider) === true),
+        .filter((option) => configured.has(option.provider)),
       credentials,
       defaults: {
         model: this.deps.defaults.modelId,
@@ -67,20 +67,14 @@ export class CoachSetup {
   }
 
   async picker(): Promise<PickerEntry[]> {
-    const credentials = await this.deps.credentials.list();
-    const configured = new Map(
-      credentials.map((item) => [item.provider, item.configured])
+    const configured = new Set(
+      (await this.deps.credentials.list())
+        .filter((item) => item.configured)
+        .map((item) => item.provider)
     );
     return this.deps.registry
       .specs()
-      .map((spec) => ({
-        ...spec,
-        configured: configured.get(spec.id) ?? false,
-      }));
-  }
-
-  async connection(): Promise<readonly ProviderCredential[]> {
-    return this.deps.credentials.list();
+      .map((spec) => ({ ...spec, configured: configured.has(spec.id) }));
   }
 
   /** 空字符串表示断开该 provider（抹掉 .env 里那一行） */
@@ -97,11 +91,8 @@ export class CoachSetup {
   async addCustom(raw: unknown): Promise<PickerEntry[]> {
     const parsed = parseCustomProvider(raw);
     const customs = await this.deps.customStore.load();
-    const builtin = this.deps.registry
-      .specs()
-      .some((spec) => spec.id === parsed.id && !spec.custom);
-    if (builtin) {
-      throw new CoachSettingsInvalidError(`id ${parsed.id} 与内置 provider 重名`);
+    if (this.deps.registry.builtinIds().has(parsed.id)) {
+      throw new BadRequestError(`id ${parsed.id} 与内置 provider 重名`);
     }
 
     const next = [...customs.filter((item) => item.id !== parsed.id), parsed];
@@ -113,7 +104,7 @@ export class CoachSetup {
   async removeCustom(id: string): Promise<PickerEntry[]> {
     const customs = await this.deps.customStore.load();
     if (!customs.some((item) => item.id === id)) {
-      throw new CoachSettingsInvalidError(`没有 id 为 ${id} 的自定义 provider`);
+      throw new BadRequestError(`没有 id 为 ${id} 的自定义 provider`);
     }
 
     /* 先抹密钥再注销：注销后注册表里就找不到这个写入目标了 */

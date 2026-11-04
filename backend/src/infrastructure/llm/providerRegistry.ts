@@ -26,7 +26,7 @@ import type {
 
 /**
  * 需要 region / resource / account 等额外字段的几家，本机版本先不列；
- * typesafe 只有分类器模型，列出来是 0 个模型的噪声。
+ * 零模型的家由 modelCount > 0 挡掉。
  */
 const NOT_LISTED = new Set([
   "amazon-bedrock",
@@ -34,7 +34,6 @@ const NOT_LISTED = new Set([
   "cloudflare-ai-gateway",
   "cloudflare-workers-ai",
   "google-vertex",
-  "typesafe",
 ]);
 
 const API_IMPLS = {
@@ -78,12 +77,9 @@ export class ProviderRegistry implements ProviderCatalog {
   private builtins: Provider[] = [];
   private builtinSpecs: ProviderSpec[] = [];
   private customs: CustomProvider[] = [];
-  private initialized = false;
 
   /** 启动时跑一次：构造出厂 provider 对象并问出各家的环境变量名 */
   async init(): Promise<void> {
-    if (this.initialized) return;
-
     const specs: ProviderSpec[] = [];
     const builtins: Provider[] = [];
 
@@ -125,7 +121,6 @@ export class ProviderRegistry implements ProviderCatalog {
 
     this.builtins = builtins;
     this.builtinSpecs = specs;
-    this.initialized = true;
   }
 
   setCustomProviders(customs: readonly CustomProvider[]): void {
@@ -145,29 +140,16 @@ export class ProviderRegistry implements ProviderCatalog {
     return [...this.builtinSpecs, ...customSpecs];
   }
 
-  /** 面板可填密钥的家：内置已注册的 + 自定义的 */
+  /** 面板可填密钥的家：selectable 等于「内置已注册」或「自定义」 */
   credentialTargets(): CredentialTarget[] {
-    const registered = new Set(this.builtins.map((provider) => provider.id));
-    const builtinTargets = this.builtinSpecs
-      .filter(
-        (spec) =>
-          spec.group === "apikey" &&
-          spec.envVar &&
-          registered.has(spec.id)
-      )
+    return this.specs()
+      .filter((spec) => spec.selectable)
       .map((spec) => ({
         provider: spec.id,
         label: spec.label,
         envVar: spec.envVar as string,
+        custom: spec.custom,
       }));
-
-    const customTargets = this.customs.map((item) => ({
-      provider: item.id,
-      label: item.name,
-      envVar: customProviderEnvVar(item.id),
-    }));
-
-    return [...builtinTargets, ...customTargets];
   }
 
   /** 交给 createModels().setProvider() 的完整集合 */
@@ -210,9 +192,5 @@ export class ProviderRegistry implements ProviderCatalog {
   /** 内置 id 与自定义 id 的区分，用于拒绝重名 */
   builtinIds(): Set<string> {
     return new Set(this.builtinSpecs.map((spec) => spec.id));
-  }
-
-  customProviders(): CustomProvider[] {
-    return [...this.customs];
   }
 }

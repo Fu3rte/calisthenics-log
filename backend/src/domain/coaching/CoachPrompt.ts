@@ -12,13 +12,9 @@ const RULES = `## 规则
 5. 给建议落到动作、组数、次数，给具体数字，不写训练哲学。
 6. 默认 160 字以内，用短句。用户明确要分析时再展开，最多 5 条要点。`;
 
-function isoDate(today: Date): string {
-  return today.toISOString().slice(0, 10);
-}
-
 export function buildSystemPrompt(log: TrainingLog, today: Date): string {
   const data = log.isEmpty ? "（暂无训练记录）" : log.toPayload();
-  return `你是街健训练助教，只服务同一个人。今天是 ${isoDate(today)}。
+  return `你是街健训练助教，只服务同一个人。今天是 ${today.toISOString().slice(0, 10)}。
 
 ## 训练日志（唯一事实源）
 ${data}

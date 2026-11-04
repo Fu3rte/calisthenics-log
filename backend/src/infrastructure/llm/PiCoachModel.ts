@@ -22,13 +22,6 @@ import type {
 import type { CoachTurn } from "../../domain/coaching/CoachTurn.js";
 import type { ProviderRegistry } from "./providerRegistry.js";
 
-export class MissingCredentialError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "MissingCredentialError";
-  }
-}
-
 const ZERO_USAGE: Usage = {
   input: 0,
   output: 0,
@@ -116,7 +109,7 @@ export class PiCoachModel implements CoachModel {
     const [providerId, modelId] = splitModelRef(settings.modelId);
     const registered = this.registered.find((item) => item.id === providerId);
     if (!registered) {
-      throw new MissingCredentialError(
+      throw new Error(
         `不支持的 provider：${providerId || "空"}（订阅登录与多字段端点在本机版本里不可用）`
       );
     }
@@ -128,7 +121,7 @@ export class PiCoachModel implements CoachModel {
 
     const apiKey = await this.credentials.resolveApiKey(providerId);
     if (!apiKey) {
-      throw new MissingCredentialError(
+      throw new Error(
         `未配置 ${registered.label} 密钥：在侧栏「模型配置 › 连接」填入，或写进 backend/.env`
       );
     }

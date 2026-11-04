@@ -25,7 +25,6 @@ async function main(): Promise<void> {
   /* backend/.env 先灌进进程，缺密钥不拦启动：对话时才报，面板里能当场补 */
   const credentials = new EnvCredentials({
     envPath: config.envPath,
-    piAuthPath: config.piAuthPath,
     registry,
   });
   credentials.load();
@@ -46,11 +45,17 @@ async function main(): Promise<void> {
     defaults: askCoach.defaults,
   });
 
-  const server = new ChatServer({ askCoach, setup, host: config.host, port: config.port });
+  const server = new ChatServer({
+    askCoach,
+    setup,
+    credentials,
+    host: config.host,
+    port: config.port,
+  });
 
   await server.listen();
   console.log(
-    `训练问答已就绪 http://${config.host}:${config.port} · ${config.modelId} · ${registry.credentialTargets().length} 家可填密钥`
+    `训练问答已就绪 http://${config.host}:${config.port} · ${config.modelId || "未设 CHAT_MODEL，默认模型由前端清单给"} · ${registry.credentialTargets().length} 家可填密钥`
   );
 }
 

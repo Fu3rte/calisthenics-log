@@ -22,6 +22,7 @@ export interface CredentialTarget {
   readonly provider: string;
   readonly label: string;
   readonly envVar: string;
+  readonly custom: boolean;
 }
 
 export interface ProviderCatalog {
@@ -29,5 +30,5 @@ export interface ProviderCatalog {
   specs(): ProviderSpec[];
   credentialTargets(): CredentialTarget[];
   setCustomProviders(list: readonly CustomProvider[]): void;
-  customProviders(): CustomProvider[];
+  builtinIds(): Set<string>;
 }
