@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Hint } from "@/shared/ui/hint";
+import { Chevron } from "@/shared/ui/icons";
 import {
   Popover,
   PopoverContent,
@@ -42,63 +42,32 @@ export function MonthPicker({ value, min, max, onChange }: MonthPickerProps) {
         <span>
           {year} 年 {month} 月
         </span>
-        <svg className="month-caret" viewBox="0 0 16 16" aria-hidden="true">
-          <path
-            d="M4 6.5 8 10.5 12 6.5"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <Chevron dir="down" className="month-caret" />
       </PopoverTrigger>
 
       <PopoverContent className="month-pop">
         <div className="month-year-bar">
-          <Hint label="上一年" side="top">
-            <button
-              type="button"
-              className="month-nav-btn"
-              aria-label="上一年"
-              disabled={panelYear <= minYear}
-              onClick={() => setPanelYear((y) => y - 1)}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M10 3.5 5.5 8 10 12.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </Hint>
+          <button
+            type="button"
+            className="month-nav-btn"
+            aria-label="上一年"
+            disabled={panelYear <= minYear}
+            onClick={() => setPanelYear((y) => y - 1)}
+          >
+            <Chevron dir="left" />
+          </button>
 
           <span className="month-year num">{panelYear}</span>
 
-          <Hint label="下一年" side="top">
-            <button
-              type="button"
-              className="month-nav-btn"
-              aria-label="下一年"
-              disabled={panelYear >= maxYear}
-              onClick={() => setPanelYear((y) => y + 1)}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true">
-                <path
-                  d="M6 3.5 10.5 8 6 12.5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </button>
-          </Hint>
+          <button
+            type="button"
+            className="month-nav-btn"
+            aria-label="下一年"
+            disabled={panelYear >= maxYear}
+            onClick={() => setPanelYear((y) => y + 1)}
+          >
+            <Chevron dir="right" />
+          </button>
         </div>
 
         <div className="month-grid" role="group" aria-label={`${panelYear} 年月份`}>

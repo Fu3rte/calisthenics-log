@@ -7,7 +7,7 @@ import { RouteStage } from "@/app/RouteStage";
 import { useRoute } from "@/app/router";
 import { CoachSettingsHost } from "@/features/coach-chat/components/ModelSettingsDialog";
 import { ChatSettingsProvider } from "@/features/coach-chat/hooks/ChatSettingsProvider";
-import { SidebarInset, SidebarProvider } from "@/shared/ui/sidebar";
+import { SidebarProvider } from "@/shared/ui/sidebar";
 import { TooltipProvider } from "@/shared/ui/tooltip";
 
 const TITLES = {
@@ -24,19 +24,13 @@ export default function App() {
 
   return (
     <SidebarProvider className="app-frame">
-      <div className="bed" aria-hidden="true">
-        <div className="blob blob-1" />
-        <div className="blob blob-2" />
-        <div className="blob blob-3" />
-      </div>
-
       <TooltipProvider>
         <ChatSettingsProvider>
           <AppSidebar />
 
-          <SidebarInset className="app-view">
+          <main className="app-view flex min-w-0 flex-1 flex-col">
             <RouteStage route={route} />
-          </SidebarInset>
+          </main>
 
           {/* 入口在侧栏底部，两个路由共用一个面板，挂在壳层而不是聊天页 */}
           <CoachSettingsHost />

@@ -4,28 +4,15 @@
  */
 import { useEffect, useState } from "react";
 
-export const ROUTES = ["training", "chat"] as const;
-export type AppRoute = (typeof ROUTES)[number];
-
-export const ROUTE_LABEL: Record<AppRoute, string> = {
-  training: "训练日志",
-  chat: "训练问答",
-};
+export type AppRoute = "training" | "chat";
 
 export function readRoute(): AppRoute {
-  if (typeof window === "undefined") return "training";
   const hash = window.location.hash.replace(/^#\/?/, "");
-  return hash === "chat" ? "chat" : "training";
+  return hash === "training" ? "training" : "chat";
 }
 
 export function routeHref(route: AppRoute): string {
   return `#/${route}`;
-}
-
-export function navigate(route: AppRoute): void {
-  const next = routeHref(route);
-  if (window.location.hash === next) return;
-  window.location.hash = next;
 }
 
 export function useRoute(): AppRoute {

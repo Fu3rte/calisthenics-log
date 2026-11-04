@@ -36,59 +36,17 @@ export function normalizeSet(s: number | ExerciseSet): ExerciseSet {
 }
 
 /* ============================================================
- * 校验（缺 sessions 或元素不符形状 → 非法；[] 合法空数据）
- * 只校验形状，不要求键集严格等于 schema（与 scripts/training_log.py check_log 一致）。
+ * 校验：结构契约由 训练日志.schema.json 与 scripts/training_log.py check 把守，
+ * 读取端只确认 sessions 是数组（[] 为合法空数据）。
  * ============================================================ */
-function validSet(r: unknown): r is number | ExerciseSet {
-  if (typeof r === "number") return Number.isInteger(r) && r >= 1;
-  if (r && typeof r === "object") {
-    const o = r as Record<string, unknown>;
-    const reps = o.reps;
-    const note = o.note;
-    return (
-      typeof reps === "number" &&
-      Number.isInteger(reps) &&
-      reps >= 1 &&
-      (note === undefined || typeof note === "string")
-    );
-  }
-  return false;
-}
-
-function validExercise(e: unknown): e is Exercise {
-  if (!e || typeof e !== "object") return false;
-  const ex = e as Record<string, unknown>;
-  return (
-    typeof ex.name === "string" &&
-    ex.name.length > 0 &&
-    Array.isArray(ex.sets) &&
-    ex.sets.length > 0 &&
-    ex.sets.every(validSet)
-  );
-}
-
 export function isValidTrainingData(d: unknown): d is TrainingData {
-  if (!d || typeof d !== "object") return false;
-  const data = d as Record<string, unknown>;
   return (
-    Array.isArray(data.sessions) &&
-    data.sessions.every((s) => {
-      if (!s || typeof s !== "object") return false;
-      const session = s as Record<string, unknown>;
-      return (
-        typeof session.date === "string" &&
-        /^\d{4}-\d{2}-\d{2}$/.test(session.date) &&
-        Array.isArray(session.exercises) &&
-        session.exercises.length > 0 &&
-        session.exercises.every(validExercise) &&
-        typeof session.note === "string"
-      );
-    })
+    !!d && typeof d === "object" && Array.isArray((d as { sessions: unknown }).sessions)
   );
 }
 
 /* ============================================================
- * RIR 徽章提取：RIR\s*([\d.\-–~]+)，连字符归一 en-dash
+ * RIR 徽章提取：匹配片段本身即带分隔标点，连字符归一 en-dash
  * ============================================================ */
 export interface NoteSplit {
   text: string;
@@ -96,16 +54,11 @@ export interface NoteSplit {
 }
 
 export function splitNote(note: string): NoteSplit {
-  if (!note) return { text: "", badge: null };
-  const m = note.match(/RIR\s*([\d.\-–~]+)/i);
+  const m = note.match(/[，、,]?\s*RIR\s*([\d.\-–~]+)/i);
   if (!m) return { text: note, badge: null };
-  const raw = m[1].replace(/-/g, "—");
-  // 移除 RIR 片段时一并收拢紧邻的分隔标点，避免出现「，；」双标点
-  const rest = note
-    .replace(/[，、,]?\s*RIR\s*[\d.\-–~]+/i, "")
-    .replace(/[，、,]?\s*$/, "")
-    .trim();
-  return { text: rest, badge: "RIR " + raw };
+  // 片段自带的分隔标点一并摘掉，避免出现「，；」双标点
+  const text = note.replace(m[0], "").replace(/[，、,]?\s*$/, "").trim();
+  return { text, badge: "RIR " + m[1].replace(/-/g, "—") };
 }
 
 /* ============================================================

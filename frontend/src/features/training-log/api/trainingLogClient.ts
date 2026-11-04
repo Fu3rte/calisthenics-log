@@ -11,16 +11,11 @@ import {
 
 export async function fetchTrainingLog(): Promise<TrainingData> {
   if (cache) return cache;
-  if (inflight) return inflight;
-
-  inflight = load().finally(() => {
-    inflight = null;
-  });
-  return inflight;
+  cache = await load();
+  return cache;
 }
 
 let cache: TrainingData | null = null;
-let inflight: Promise<TrainingData> | null = null;
 
 /** 已加载过的数据：切回页面时直接出内容，不闪 loading */
 export function peekTrainingLog(): TrainingData | null {

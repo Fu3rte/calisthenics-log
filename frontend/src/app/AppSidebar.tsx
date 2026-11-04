@@ -1,30 +1,27 @@
 /**
  * 主导航侧栏：品牌、页面切换、折叠。
  *
- * 动效分两层（GSAP）：
- * 1. 选中指示器在条目间滑动，换页用带回弹的曲线，折叠时与栏宽同一条缓动；
- * 2. 品牌玻璃珠常驻呼吸，reduced-motion 下全部直出。
+ * 动效（GSAP）：选中指示器在条目间滑动，换页用带回弹的曲线，
+ * 折叠时与栏宽同一条缓动；reduced-motion 下直出。
  */
-import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { routeHref, useRoute, type AppRoute } from "@/app/router";
 import { useChatSettings } from "@/features/coach-chat/hooks/ChatSettingsProvider";
-import { prefersReducedMotion } from "@/shared/hooks/useCountUp";
+import { prefersReducedMotion } from "@/shared/hooks/prefersReducedMotion";
 import { GlassButton } from "@/shared/ui/glass-button";
-import { Hint } from "@/shared/ui/hint";
+import { Close } from "@/shared/ui/icons";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/shared/ui/tooltip";
 import {
   SIDEBAR_PADDING,
   SIDEBAR_WIDTH,
   SIDEBAR_WIDTH_ICON,
   SIDEBAR_WIDTH_MOBILE,
   Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
   useSidebar,
 } from "@/shared/ui/sidebar";
 
@@ -36,6 +33,24 @@ interface NavEntry {
 }
 
 const NAV: NavEntry[] = [
+  {
+    id: "chat",
+    label: "训练问答",
+    description: "只读日志的教练",
+    icon: (
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <path
+          d="M2.8 6.1a3.3 3.3 0 0 1 3.3-3.3h5.8a3.3 3.3 0 0 1 3.3 3.3v3.1a3.3 3.3 0 0 1-3.3 3.3H7.6l-3.4 2.4a.5.5 0 0 1-.8-.4v-2.1a3.3 3.3 0 0 1-.6-1.9V6.1Z"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+        <circle cx="6.7" cy="7.6" r="0.95" fill="currentColor" />
+        <circle cx="9.3" cy="7.6" r="0.95" fill="currentColor" />
+        <circle cx="11.9" cy="7.6" r="0.95" fill="currentColor" />
+      </svg>
+    ),
+  },
   {
     id: "training",
     label: "训练日志",
@@ -63,25 +78,28 @@ const NAV: NavEntry[] = [
       </svg>
     ),
   },
-  {
-    id: "chat",
-    label: "训练问答",
-    description: "只读日志的教练",
-    icon: (
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-        <path
-          d="M2.8 6.1a3.3 3.3 0 0 1 3.3-3.3h5.8a3.3 3.3 0 0 1 3.3 3.3v3.1a3.3 3.3 0 0 1-3.3 3.3H7.6l-3.4 2.4a.5.5 0 0 1-.8-.4v-2.1a3.3 3.3 0 0 1-.6-1.9V6.1Z"
-          stroke="currentColor"
-          strokeWidth="1.4"
-          strokeLinejoin="round"
-        />
-        <circle cx="6.7" cy="7.6" r="0.95" fill="currentColor" />
-        <circle cx="9.3" cy="7.6" r="0.95" fill="currentColor" />
-        <circle cx="11.9" cy="7.6" r="0.95" fill="currentColor" />
-      </svg>
-    ),
-  },
 ];
+
+/** 收起态才挂 tooltip：展开时条目自带文字，窄屏抽屉同理用不上 */
+function SideHint({
+  label,
+  side,
+  children,
+}: {
+  label: string;
+  side: "top" | "bottom";
+  children: React.ReactNode;
+}) {
+  const { state, isMobile } = useSidebar();
+  if (state === "expanded" || isMobile) return <>{children}</>;
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side}>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 function NavRow({
   entry,
@@ -93,29 +111,26 @@ function NavRow({
   onNavigate: () => void;
 }) {
   return (
-    <SidebarMenuItem>
-      <Hint label={entry.label} side="right">
-        <a
-          href={routeHref(entry.id)}
-          data-active={active}
-          aria-current={active ? "page" : undefined}
-          aria-label={entry.label}
-          onClick={onNavigate}
-          className="sidebar-menu-button group/nav focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-        >
-          <span className="sidebar-nav-icon">{entry.icon}</span>
-          <span className="sidebar-label min-w-0 flex-1">
-            <span className="block truncate text-[13.5px] leading-[1.3]">
-              {entry.label}
-            </span>
-            <span className="sidebar-label-desc mt-0.5 block truncate text-[10.5px] leading-[1.3] text-muted-foreground">
-              {entry.description}
-            </span>
+    <SideHint label={entry.label} side="bottom">
+      <a
+        href={routeHref(entry.id)}
+        data-active={active}
+        aria-current={active ? "page" : undefined}
+        onClick={onNavigate}
+        className="sidebar-menu-button focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
+      >
+        <span className="sidebar-nav-icon">{entry.icon}</span>
+        <span className="sidebar-label min-w-0 flex-1">
+          <span className="block truncate text-[13.5px] leading-[1.3]">
+            {entry.label}
           </span>
-          {active && <span className="sidebar-label sidebar-dot" aria-hidden="true" />}
-        </a>
-      </Hint>
-    </SidebarMenuItem>
+          <span className="sidebar-label-desc mt-0.5 block truncate text-[10.5px] leading-[1.3] text-muted-foreground">
+            {entry.description}
+          </span>
+        </span>
+        {active && <span className="sidebar-label sidebar-dot" aria-hidden="true" />}
+      </a>
+    </SideHint>
   );
 }
 
@@ -123,9 +138,8 @@ export function AppSidebar() {
   const route = useRoute();
   const { open, setOpen, state, isMobile, openMobile, setOpenMobile } = useSidebar();
   const { modelLabel, setOpen: setOpenSettings } = useChatSettings();
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
-  const orbRef = useRef<HTMLSpanElement>(null);
   const geoRef = useRef<{ x: number; y: number; width: number; height: number } | null>(
     null
   );
@@ -178,15 +192,13 @@ export function AppSidebar() {
         return;
       }
 
-      const duration = stateChanged ? 0.46 : 0.48;
-      const ease = stateChanged ? "power3.inOut" : "back.out(1.5)";
       gsap.to(indicator, {
         ...target,
         scaleX: 1,
         scaleY: 1,
         autoAlpha: 1,
-        duration,
-        ease,
+        duration: 0.46,
+        ease: stateChanged ? "power3.inOut" : "back.out(1.5)",
         overwrite: true,
       });
 
@@ -212,134 +224,87 @@ export function AppSidebar() {
     };
   }, [route, state, isMobile, openMobile]);
 
-  /* 品牌玻璃珠：常驻呼吸 */
-  useEffect(() => {
-    const orb = orbRef.current;
-    if (!orb || prefersReducedMotion()) return;
-    const tween = gsap.to(orb, {
-      y: -1.6,
-      scale: 1.04,
-      duration: 3.6,
-      ease: "sine.inOut",
-      yoyo: true,
-      repeat: -1,
-    });
-    return () => {
-      tween.kill();
-    };
-  }, []);
-
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
   };
 
   return (
     <Sidebar aria-labelledby={headingId}>
-      <SidebarHeader className="pt-1">
-        <div className="sidebar-brand-row flex items-center gap-2.5 px-1">
-          <span ref={orbRef} className="sidebar-orb" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-              <g fill="currentColor">
-                <rect x="6.4" y="6" width="11.2" height="2.3" rx="1.15" />
-                <rect x="6.4" y="10.85" width="11.2" height="2.3" rx="1.15" />
-                <rect x="6.4" y="15.7" width="11.2" height="2.3" rx="1.15" />
-              </g>
-            </svg>
-          </span>
-          <div className="sidebar-label min-w-0 flex-1">
-            <p
-              id={headingId}
-              className="truncate text-[14.5px] leading-[1.25] font-semibold tracking-[-0.01em]"
+      <div className="sidebar-brand-row flex items-center gap-2.5 px-2 pb-2 pt-1">
+        <div className="sidebar-label min-w-0 flex-1">
+          <p
+            id={headingId}
+            className="truncate text-[14.5px] leading-[1.25] font-semibold tracking-[-0.01em]"
+          >
+            街健日志
+          </p>
+          <p className="mt-1 truncate font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
+            Calisthenics
+          </p>
+        </div>
+        {isMobile ? (
+          <GlassButton
+            variant="quiet"
+            aria-label="关闭导航"
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
+            onClick={() => setOpenMobile(false)}
+          >
+            <Close />
+          </GlassButton>
+        ) : (
+          <SideHint label="展开侧栏 · ⌘B" side="bottom">
+            <button
+              type="button"
+              onClick={() => setOpen((current) => !current)}
+              aria-expanded={open}
+              aria-label={open ? "收起侧栏" : "展开侧栏"}
+              className="sidebar-icon-btn grid h-9 w-9 shrink-0 place-items-center rounded-[11px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
             >
-              街健日志
-            </p>
-            <p className="mt-1 truncate font-mono text-[9px] uppercase tracking-[0.18em] text-muted-foreground">
-              Calisthenics
-            </p>
-          </div>
-          {isMobile ? (
-            <GlassButton
-              variant="quiet"
-              intensity={0.05}
-              aria-label="关闭导航"
-              className="grid h-11 w-11 shrink-0 place-items-center rounded-full"
-              onClick={() => setOpenMobile(false)}
-            >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <rect
+                  x="2.4"
+                  y="3.4"
+                  width="13.2"
+                  height="11.2"
+                  rx="3.2"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+                <path d="M7 3.8v10.4" stroke="currentColor" strokeWidth="1.4" />
                 <path
-                  d="M3.2 3.2l8.6 8.6M11.8 3.2l-8.6 8.6"
+                  d="M11.4 7.2 9.8 9l1.6 1.8"
                   stroke="currentColor"
                   strokeWidth="1.4"
                   strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="sidebar-collapse-arrow"
                 />
               </svg>
-            </GlassButton>
-          ) : (
-            <Hint label={open ? "收起侧栏 · ⌘B" : "展开侧栏 · ⌘B"} side="bottom">
-              <button
-                type="button"
-                onClick={() => setOpen((current) => !current)}
-                aria-expanded={open}
-                aria-label={open ? "收起侧栏" : "展开侧栏"}
-                className="sidebar-icon-btn grid h-9 w-9 shrink-0 place-items-center rounded-[11px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                  <rect
-                    x="2.4"
-                    y="3.4"
-                    width="13.2"
-                    height="11.2"
-                    rx="3.2"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                  />
-                  <path d="M7 3.8v10.4" stroke="currentColor" strokeWidth="1.4" />
-                  <path
-                    d="M11.4 7.2 9.8 9l1.6 1.8"
-                    stroke="currentColor"
-                    strokeWidth="1.4"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="sidebar-collapse-arrow"
-                  />
-                </svg>
-              </button>
-            </Hint>
-          )}
-        </div>
-      </SidebarHeader>
+            </button>
+          </SideHint>
+        )}
+      </div>
 
-      <SidebarContent className="mt-5">
-        <nav aria-label="主导航" className="flex flex-col">
-          <SidebarGroup>
-            <SidebarGroupLabel className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-muted-foreground">
-              训练
-            </SidebarGroupLabel>
-            <div ref={menuRef} className="relative">
-              <span
-                ref={indicatorRef}
-                className="nav-indicator"
-                aria-hidden="true"
-              />
-              <SidebarMenu>
-                {NAV.map((entry) => (
-                  <NavRow
-                    key={entry.id}
-                    entry={entry}
-                    active={route === entry.id}
-                    onNavigate={closeOnMobile}
-                  />
-                ))}
-              </SidebarMenu>
-            </div>
-          </SidebarGroup>
-        </nav>
-      </SidebarContent>
+      <nav
+        ref={menuRef}
+        aria-label="主导航"
+        className="relative mt-5 flex min-h-0 flex-1 flex-col gap-1 overflow-hidden"
+      >
+        <span ref={indicatorRef} className="nav-indicator" aria-hidden="true" />
+        {NAV.map((entry) => (
+          <NavRow
+            key={entry.id}
+            entry={entry}
+            active={route === entry.id}
+            onNavigate={closeOnMobile}
+          />
+        ))}
+      </nav>
 
-      <SidebarFooter>
-        <Hint
+      <div className="mt-auto flex flex-col gap-2 px-1 pt-2">
+        <SideHint
           label={modelLabel ? `模型配置 · ${modelLabel}` : "模型配置"}
-          side="right"
+          side="top"
         >
           <button
             id="model-settings-trigger"
@@ -376,8 +341,8 @@ export function AppSidebar() {
               </span>
             </span>
           </button>
-        </Hint>
-      </SidebarFooter>
+        </SideHint>
+      </div>
     </Sidebar>
   );
 }

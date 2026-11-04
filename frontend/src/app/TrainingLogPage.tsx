@@ -23,12 +23,7 @@ export function TrainingLogPage() {
     return (
       <div className="app-scroll h-full">
         <div className="app-main">
-          <header className="flex items-start gap-3">
-            <SidebarTrigger className="mt-1 md:hidden" />
-            <h1 className="display-text whitespace-nowrap text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] min-[960px]:text-[32px]">
-              训练日志
-            </h1>
-          </header>
+          <SidebarTrigger className="md:hidden" />
           <div className="glass-panel px-6 py-8">
             <p className="text-[14.5px] leading-[1.8]">{ERROR_MSG}</p>
             <p className="mt-2 text-[13px] text-muted-foreground">

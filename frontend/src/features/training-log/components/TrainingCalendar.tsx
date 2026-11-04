@@ -1,5 +1,4 @@
-import { Card } from "@/shared/ui/card";
-import { Hint } from "@/shared/ui/hint";
+import { Chevron } from "@/shared/ui/icons";
 import { MonthPicker } from "@/features/training-log/components/MonthPicker";
 import {
   monthParts,
@@ -44,7 +43,10 @@ export function TrainingCalendar({
   const nextDisabled = nextKey > maxMonth;
 
   return (
-    <Card className="glass-panel calendar-panel" aria-labelledby="calendarTitle">
+    <div
+      className="glass-panel calendar-panel flex flex-col gap-6"
+      aria-labelledby="calendarTitle"
+    >
       <header className="calendar-head">
         <div className="calendar-nav">
           <MonthPicker
@@ -54,46 +56,24 @@ export function TrainingCalendar({
             onChange={onMonthChange}
           />
           <div className="calendar-nav-btns">
-            <Hint label="上一月" side="bottom">
-              <button
-                type="button"
-                className="month-nav-btn"
-                aria-label="上一月"
-                disabled={prevDisabled}
-                onClick={() => onMonthChange(prevKey)}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M10 3.5 5.5 8 10 12.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </Hint>
-            <Hint label="下一月" side="bottom">
-              <button
-                type="button"
-                className="month-nav-btn"
-                aria-label="下一月"
-                disabled={nextDisabled}
-                onClick={() => onMonthChange(nextKey)}
-              >
-                <svg viewBox="0 0 16 16" aria-hidden="true">
-                  <path
-                    d="M6 3.5 10.5 8 6 12.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </Hint>
+            <button
+              type="button"
+              className="month-nav-btn"
+              aria-label="上一月"
+              disabled={prevDisabled}
+              onClick={() => onMonthChange(prevKey)}
+            >
+              <Chevron dir="left" />
+            </button>
+            <button
+              type="button"
+              className="month-nav-btn"
+              aria-label="下一月"
+              disabled={nextDisabled}
+              onClick={() => onMonthChange(nextKey)}
+            >
+              <Chevron dir="right" />
+            </button>
           </div>
         </div>
         <p className="calendar-count num">{sessions.length} 次训练</p>
@@ -145,6 +125,6 @@ export function TrainingCalendar({
           );
         })}
       </div>
-    </Card>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { DayRecord } from "@/features/training-log/components/DayRecord";
 import { TrainingCalendar } from "@/features/training-log/components/TrainingCalendar";
-import { Card } from "@/shared/ui/card";
 import { SidebarTrigger } from "@/shared/ui/sidebar";
 import {
   currentMonthKey,
@@ -47,17 +46,8 @@ export function Dashboard({ sessions: rawSessions }: { sessions: Session[] }) {
   return (
     <div className="app-scroll h-full">
       <main className="app-main">
-        <header className="flex items-start gap-3">
-          <SidebarTrigger className="mt-1 md:hidden" />
-          <div className="min-w-0 flex-1">
-            <h1 className="display-text whitespace-nowrap text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] min-[960px]:text-[32px]">
-              训练日志
-            </h1>
-            <p className="mt-1 text-[14.5px] leading-[1.6] text-muted-foreground">
-              {sessions.length ? `${year} 年 ${month} 月 · 训练记录` : "训练记录"}
-            </p>
-          </div>
-        </header>
+        {/* 移动端抽屉只有这一个开启入口 */}
+        <SidebarTrigger className="md:hidden" />
 
         {sessions.length === 0 ? (
           <div className="glass-panel is-text px-6 py-10">
@@ -82,11 +72,11 @@ export function Dashboard({ sessions: rawSessions }: { sessions: Session[] }) {
               {selectedSession ? (
                 <DayRecord session={selectedSession} />
               ) : (
-                <Card className="glass-panel day-panel self-start">
+                <div className="glass-panel day-panel self-start">
                   <p className="day-note is-empty">
                     {year} 年 {month} 月还没有训练记录。
                   </p>
-                </Card>
+                </div>
               )}
             </div>
           </div>
