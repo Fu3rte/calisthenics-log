@@ -1,5 +1,5 @@
 /**
- * 模型清单读取：provider 分组、可用模型、默认值与密钥状态都由服务端给出，前端不硬编码。
+ * 模型清单读取：可用模型、默认值与密钥状态都由服务端给出，前端不硬编码。
  */
 import type {
   ModelCatalog,
@@ -16,10 +16,9 @@ export async function fetchModelCatalog(): Promise<ModelCatalog> {
   }
 
   const payload = (await response.json()) as {
-    providers?: { id: string; label: string }[];
     models?: Record<string, unknown>[];
     credentials?: ProviderCredential[];
-    defaults?: { model?: string; maxTokens?: number };
+    defaults?: { model?: string };
   };
 
   const models: ModelOption[] = (payload.models ?? [])
@@ -34,18 +33,11 @@ export async function fetchModelCatalog(): Promise<ModelCatalog> {
       providerLabel: typeof item.providerLabel === "string" ? item.providerLabel : "",
     }));
 
-  const seen = new Map<string, string>();
-  for (const model of models) {
-    if (!seen.has(model.provider)) seen.set(model.provider, model.providerLabel);
-  }
-
   return {
-    providers: payload.providers ?? [...seen].map(([id, label]) => ({ id, label })),
     models,
     credentials: payload.credentials ?? [],
     defaults: {
-      model: payload.defaults?.model ?? models[0]?.id ?? "",
-      maxTokens: payload.defaults?.maxTokens ?? 900,
+      model: payload.defaults?.model || models[0]?.id || "",
     },
   };
 }

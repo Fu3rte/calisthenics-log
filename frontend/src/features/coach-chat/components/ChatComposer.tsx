@@ -10,6 +10,9 @@ interface ChatComposerProps {
   onStop: () => void;
 }
 
+const ACTION =
+  "chat-input-action inline-flex h-11 min-w-[76px] items-center justify-center rounded-full px-4 text-[13.5px] font-medium";
+
 export function ChatComposer({
   value,
   pending,
@@ -54,9 +57,8 @@ export function ChatComposer({
         {pending ? (
           <GlassButton
             onClick={onStop}
-            intensity={0.05}
             aria-label="停止生成"
-            className="chat-input-action inline-flex h-11 min-w-[76px] items-center justify-center rounded-full px-4 text-[13.5px] font-medium"
+            className={ACTION}
           >
             停止
           </GlassButton>
@@ -65,9 +67,7 @@ export function ChatComposer({
             variant="ink"
             onClick={onSend}
             disabled={empty}
-            aria-disabled={empty || undefined}
-            intensity={0.05}
-            className="chat-input-action chat-send inline-flex h-11 min-w-[76px] items-center justify-center rounded-full px-4 text-[13.5px] font-medium"
+            className={`${ACTION} chat-send`}
           >
             发送
           </GlassButton>

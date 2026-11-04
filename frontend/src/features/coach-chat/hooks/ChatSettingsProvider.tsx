@@ -1,5 +1,5 @@
 /**
- * 模型配置的全局状态：清单、本机设置、provider 连接状态与面板开合。
+ * 模型配置的全局状态：清单、本机选的模型、provider 连接状态与面板开合。
  *
  * 侧栏底部入口在壳层，聊天页在路由里，两边必须共用同一份，所以状态下沉到这里。
  * 密钥不落浏览器存储，面板只持有服务端返回的掩码。
@@ -14,41 +14,35 @@ import {
   type ReactNode,
 } from "react";
 import { fetchModelCatalog } from "@/features/coach-chat/api/modelCatalog";
-import { putConnection } from "@/features/coach-chat/api/connectionApi";
 import {
   addCustomProvider,
-  fetchPicker,
+  putConnection,
   removeCustomProvider,
 } from "@/features/coach-chat/api/providerApi";
 import {
-  clearSettings,
-  loadSettings,
-  saveSettings as persistSettings,
+  clearModel,
+  loadModel,
+  saveModel,
 } from "@/features/coach-chat/api/settingsStore";
 import type {
-  ChatSettings,
   CustomProviderInput,
   ModelCatalog,
-  PickerEntry,
   ProviderCredential,
 } from "@/features/coach-chat/model/chat";
 
 interface ChatSettingsValue {
   catalog: ModelCatalog | null;
-  /** null 表示尚未确定，请求时不带 settings，由服务端用默认值 */
-  settings: ChatSettings | null;
+  /** null 表示尚未确定，请求时不带 settings，由服务端用默认模型 */
+  model: string | null;
   /** 当前模型的显示名，清单没到就是 null */
   modelLabel: string | null;
   credentials: ProviderCredential[];
-  /** 添加 Provider 浮层的数据，null 表示还没拉过 */
-  picker: PickerEntry[] | null;
   open: boolean;
   setOpen: (open: boolean) => void;
-  save: (next: ChatSettings) => void;
+  save: (model: string) => void;
   reset: () => void;
   /** 写密钥后立即刷新清单，未配置的 provider 才会变成可选 */
   updateKey: (provider: string, apiKey: string) => Promise<void>;
-  loadPicker: () => Promise<PickerEntry[]>;
   addCustom: (input: CustomProviderInput) => Promise<void>;
   removeCustom: (id: string) => Promise<void>;
 }
@@ -65,9 +59,8 @@ export function useChatSettings(): ChatSettingsValue {
 
 export function ChatSettingsProvider({ children }: { children: ReactNode }) {
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null);
-  const [stored, setStored] = useState<ChatSettings | null>(loadSettings);
+  const [storedModel, setStoredModel] = useState<string | null>(loadModel);
   const [credentials, setCredentials] = useState<ProviderCredential[]>([]);
-  const [picker, setPicker] = useState<PickerEntry[] | null>(null);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -87,82 +80,83 @@ export function ChatSettingsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   /* 本机存的模型不在清单里（换了 provider 体系或旧值）时回落默认，避免对话卡死 */
-  const settings = useMemo(() => {
-    if (!catalog) return stored;
-    if (stored && catalog.models.some((option) => option.id === stored.model)) {
-      return stored;
-    }
-    return catalog.defaults;
-  }, [catalog, stored]);
+  const model = useMemo<string | null>(() => {
+    if (!catalog) return null;
+    return storedModel && catalog.models.some((option) => option.id === storedModel)
+      ? storedModel
+      : catalog.defaults.model;
+  }, [catalog, storedModel]);
 
   const modelLabel = useMemo(() => {
-    const modelId = settings?.model;
+    const modelId = model ?? storedModel;
     if (!modelId) return null;
     return (
       catalog?.models.find((option) => option.id === modelId)?.label ?? modelId
     );
-  }, [catalog, settings]);
+  }, [catalog, model, storedModel]);
 
-  const save = useCallback((next: ChatSettings) => {
-    setStored(next);
-    persistSettings(next);
+  const save = useCallback((next: string) => {
+    setStoredModel(next);
+    saveModel(next);
   }, []);
 
   const reset = useCallback(() => {
-    setStored(null);
-    clearSettings();
+    setStoredModel(null);
+    clearModel();
   }, []);
 
-  const updateKey = useCallback(async (provider: string, apiKey: string) => {
-    const next = await putConnection(provider, apiKey);
-    setCredentials(next);
-    /* 密钥写了不刷清单，面板里的模型行还停在未配置状态 */
+  /* 配置写过以后清单里的可选模型才会变，三处改动共用同一次刷新 */
+  const refresh = useCallback(async () => {
     setCatalog(await fetchModelCatalog());
   }, []);
 
-  const loadPicker = useCallback(async () => {
-    const next = await fetchPicker();
-    setPicker(next);
-    return next;
-  }, []);
+  const updateKey = useCallback(
+    async (provider: string, apiKey: string) => {
+      setCredentials(await putConnection(provider, apiKey));
+      await refresh();
+    },
+    [refresh]
+  );
 
-  const addCustom = useCallback(async (input: CustomProviderInput) => {
-    setPicker(await addCustomProvider(input));
-    setCatalog(await fetchModelCatalog());
-  }, []);
+  const addCustom = useCallback(
+    async (input: CustomProviderInput) => {
+      await addCustomProvider(input);
+      await refresh();
+    },
+    [refresh]
+  );
 
-  const removeCustom = useCallback(async (id: string) => {
-    setPicker(await removeCustomProvider(id));
-    setCatalog(await fetchModelCatalog());
-  }, []);
+  const removeCustom = useCallback(
+    async (id: string) => {
+      await removeCustomProvider(id);
+      await refresh();
+    },
+    [refresh]
+  );
 
   const value = useMemo<ChatSettingsValue>(
     () => ({
       catalog,
-      settings,
+      model,
       modelLabel,
       credentials,
-      picker,
       open,
       setOpen,
       save,
       reset,
       updateKey,
-      loadPicker,
       addCustom,
       removeCustom,
     }),
     [
       catalog,
-      settings,
+      model,
       modelLabel,
       credentials,
-      picker,
       open,
       save,
       reset,
       updateKey,
-      loadPicker,
       addCustom,
       removeCustom,
     ]

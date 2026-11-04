@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { SUGGESTIONS, type ChatMessage } from "@/features/coach-chat/model/chat";
 import { GlassButton } from "@/shared/ui/glass-button";
+import { Message, MessageContent } from "@/shared/ui/message";
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -34,7 +35,6 @@ export function ChatMessages({
               <GlassButton
                 key={item}
                 onClick={() => onPick(item)}
-                intensity={0.05}
                 className="inline-flex min-h-11 max-w-full items-center rounded-full px-4 py-2 text-[13px] leading-[1.5]"
               >
                 {item}
@@ -50,24 +50,29 @@ export function ChatMessages({
 
         if (message.role === "user") {
           return (
-            <p key={index} className="chat-bubble">
-              {message.content}
-            </p>
+            <Message key={index} align="end">
+              <MessageContent>
+                <p className="chat-bubble">{message.content}</p>
+              </MessageContent>
+            </Message>
           );
         }
 
         if (!message.content && !streaming) return null;
 
         return (
-          <div
-            key={index}
-            className={`chat-answer${streaming && !message.content ? " is-pending" : ""}`}
-          >
-            {message.content || "正在读日志"}
-            {streaming && (
-              <span className="chat-pending-dot" aria-hidden="true" />
-            )}
-          </div>
+          <Message key={index}>
+            <MessageContent>
+              <div
+                className={`chat-answer${streaming && !message.content ? " is-pending" : ""}`}
+              >
+                {message.content || "正在读日志"}
+                {streaming && (
+                  <span className="chat-pending-dot" aria-hidden="true" />
+                )}
+              </div>
+            </MessageContent>
+          </Message>
         );
       })}
 

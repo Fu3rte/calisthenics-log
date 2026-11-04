@@ -17,25 +17,13 @@ export const MAX_TURNS = 12;
 export const MAX_INPUT = 2000;
 
 /* ============================================================
- * 模型设置
+ * 模型清单
  * ============================================================ */
-export interface ChatSettings {
-  /** provider/model 形式的模型引用，来自服务端清单 */
-  model: string;
-  /** 单次回复上限，与后端 128–4000 对齐 */
-  maxTokens: number;
-}
-
 export interface ModelOption {
   id: string;
   label: string;
   provider: string;
   providerLabel: string;
-}
-
-export interface ProviderOption {
-  id: string;
-  label: string;
 }
 
 /** 服务端给出的 provider 连接状态；masked 永远不是明文密钥 */
@@ -45,7 +33,6 @@ export interface ProviderCredential {
   envVar: string;
   configured: boolean;
   masked: string | null;
-  source: "file" | "system" | "pi" | null;
   /** 自定义兼容端点，面板上可删 */
   custom: boolean;
 }
@@ -57,7 +44,6 @@ export interface PickerEntry {
   id: string;
   label: string;
   group: ProviderGroup;
-  envVar: string | null;
   modelCount: number;
   custom: boolean;
   /** false 表示只读展示：订阅登录、多字段端点、零模型 */
@@ -76,23 +62,9 @@ export interface CustomProviderInput {
 }
 
 export interface ModelCatalog {
-  providers: ProviderOption[];
   models: ModelOption[];
   credentials: ProviderCredential[];
-  defaults: ChatSettings;
-}
-
-export const MIN_MAX_TOKENS = 128;
-export const MAX_MAX_TOKENS = 4000;
-
-/** 越界的 token 数夹回区间 */
-export function clampMaxTokens(value: number): number {
-  if (!Number.isFinite(value)) return MIN_MAX_TOKENS;
-  return Math.min(MAX_MAX_TOKENS, Math.max(MIN_MAX_TOKENS, Math.round(value)));
-}
-
-export function sameSettings(a: ChatSettings, b: ChatSettings): boolean {
-  return a.model === b.model && a.maxTokens === b.maxTokens;
+  defaults: { model: string };
 }
 
 export const SUGGESTIONS = [

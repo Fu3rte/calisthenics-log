@@ -12,22 +12,9 @@ import {
   MAX_INPUT,
   trimTurns,
   type ChatMessage,
-  type ChatSettings,
 } from "@/features/coach-chat/model/chat";
 
-const NOT_RUNNING = "本地问答服务没起来，跑 npm run dev 一起启动。";
-
-export interface CoachChatState {
-  messages: ChatMessage[];
-  input: string;
-  pending: boolean;
-  error: string | null;
-  setInput: (value: string) => void;
-  send: (text?: string) => void;
-  stop: () => void;
-}
-
-export function useCoachChat(settings?: ChatSettings): CoachChatState {
+export function useCoachChat(model: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
@@ -62,7 +49,7 @@ export function useCoachChat(settings?: ChatSettings): CoachChatState {
         try {
           for await (const delta of streamCoachReply(
             history,
-            settings,
+            model,
             controller.signal
           )) {
             setMessages((prev) => {
@@ -79,12 +66,7 @@ export function useCoachChat(settings?: ChatSettings): CoachChatState {
           }
         } catch (cause) {
           if (!controller.signal.aborted) {
-            const message = cause instanceof Error ? cause.message : String(cause);
-            setError(
-              message === "Failed to fetch" || message.includes("NetworkError")
-                ? NOT_RUNNING
-                : message
-            );
+            setError(cause instanceof Error ? cause.message : String(cause));
           }
         } finally {
           abortRef.current = null;
@@ -95,7 +77,7 @@ export function useCoachChat(settings?: ChatSettings): CoachChatState {
         }
       })();
     },
-    [input, messages, pending, settings]
+    [input, messages, pending, model]
   );
 
   const stop = useCallback(() => {
