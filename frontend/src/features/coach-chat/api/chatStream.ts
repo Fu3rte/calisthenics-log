@@ -1,6 +1,6 @@
 /**
  * 对话传输适配器：POST /api/chat，逐帧读 SSE 的 data 段。
- * 产出纯文本增量，出错抛异常，取消靠 AbortSignal。
+ * 产出正文增量与工具活动，出错抛异常，取消靠 AbortSignal。
  */
 import type { ChatMessage } from "@/features/coach-chat/model/chat";
 
@@ -9,11 +9,33 @@ const ENDPOINT = `${import.meta.env.BASE_URL}api/chat`;
 /** 本机服务没起来时 fetch 直接 reject，这里换成照着能做的提示 */
 export const NOT_RUNNING = "本地问答服务没起来，跑 npm run dev 一起启动。";
 
+interface ToolFrame {
+  state: "call" | "result";
+  id: string;
+  name: string;
+  detail: string;
+  isError?: boolean;
+  durationMs?: number;
+}
+
 interface ChatFrame {
   delta?: string;
+  tool?: ToolFrame;
   error?: string;
   done?: boolean;
 }
+
+export type ChatStreamEvent =
+  | { type: "delta"; text: string }
+  | { type: "tool_call"; id: string; name: string; detail: string }
+  | {
+      type: "tool_result";
+      id: string;
+      name: string;
+      detail: string;
+      isError: boolean;
+      durationMs: number;
+    };
 
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -32,7 +54,7 @@ export async function* streamCoachReply(
   messages: ChatMessage[],
   model: string | null,
   signal: AbortSignal
-): AsyncGenerator<string, void, void> {
+): AsyncGenerator<ChatStreamEvent, void, void> {
   let response: Response;
   try {
     response = await fetch(ENDPOINT, {
@@ -70,7 +92,24 @@ export async function* streamCoachReply(
         if (!line) continue;
         const frame = JSON.parse(line.slice(6)) as ChatFrame;
         if (frame.error) throw new Error(frame.error);
-        if (frame.delta) yield frame.delta;
+        if (frame.delta) yield { type: "delta", text: frame.delta };
+        if (frame.tool?.state === "call") {
+          yield {
+            type: "tool_call",
+            id: frame.tool.id,
+            name: frame.tool.name,
+            detail: frame.tool.detail,
+          };
+        } else if (frame.tool?.state === "result") {
+          yield {
+            type: "tool_result",
+            id: frame.tool.id,
+            name: frame.tool.name,
+            detail: frame.tool.detail,
+            isError: frame.tool.isError ?? false,
+            durationMs: frame.tool.durationMs ?? 0,
+          };
+        }
       }
     }
   } finally {

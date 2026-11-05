@@ -54,7 +54,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // 问答后端独立进程，dev 与 preview 都转发到它
   server: { proxy: { "/api": CHAT_SERVER } },
   preview: { proxy: { "/api": CHAT_SERVER } },
 });

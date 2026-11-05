@@ -12,7 +12,16 @@ export function loadHistory(): ChatMessage[] {
     if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.slice(-MAX_TURNS) as ChatMessage[];
+    return parsed
+      .filter(
+        (item): item is ChatMessage =>
+          typeof item === "object" &&
+          item !== null &&
+          ((item as ChatMessage).role === "user" ||
+            (item as ChatMessage).role === "assistant") &&
+          typeof (item as ChatMessage).content === "string"
+      )
+      .slice(-MAX_TURNS);
   } catch {
     return [];
   }

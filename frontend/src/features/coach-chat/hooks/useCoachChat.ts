@@ -12,6 +12,7 @@ import {
   MAX_INPUT,
   trimTurns,
   type ChatMessage,
+  type ToolActivity,
 } from "@/features/coach-chat/model/chat";
 
 export function useCoachChat(model: string | null) {
@@ -47,7 +48,7 @@ export function useCoachChat(model: string | null) {
 
       void (async () => {
         try {
-          for await (const delta of streamCoachReply(
+          for await (const event of streamCoachReply(
             history,
             model,
             controller.signal
@@ -55,12 +56,38 @@ export function useCoachChat(model: string | null) {
             setMessages((prev) => {
               const next = prev.slice();
               const last = next[next.length - 1];
-              if (last && last.role === "assistant") {
+              if (!last || last.role !== "assistant") return prev;
+
+              if (event.type === "delta") {
                 next[next.length - 1] = {
-                  role: "assistant",
-                  content: last.content + delta,
+                  ...last,
+                  content: last.content + event.text,
                 };
+                return next;
               }
+
+              const activity: ToolActivity =
+                event.type === "tool_call"
+                  ? {
+                      id: event.id,
+                      name: event.name,
+                      detail: event.detail,
+                      state: "call",
+                    }
+                  : {
+                      id: event.id,
+                      name: event.name,
+                      detail: event.detail,
+                      state: "result",
+                      isError: event.isError,
+                      durationMs: event.durationMs,
+                    };
+
+              const activities = [...(last.activities ?? [])];
+              const index = activities.findIndex((item) => item.id === event.id);
+              if (index >= 0) activities[index] = activity;
+              else activities.push(activity);
+              next[next.length - 1] = { ...last, activities };
               return next;
             });
           }
@@ -72,7 +99,31 @@ export function useCoachChat(model: string | null) {
           abortRef.current = null;
           setPending(false);
           setMessages((prev) =>
-            prev.filter((item) => item.role === "user" || item.content.length > 0)
+            prev
+              .map((item) => {
+                if (item.role !== "assistant" || !item.activities?.length) {
+                  return item;
+                }
+                return {
+                  ...item,
+                  activities: item.activities.map((activity) =>
+                    activity.state === "call"
+                      ? {
+                          ...activity,
+                          state: "result" as const,
+                          detail: "已中断",
+                          isError: true,
+                        }
+                      : activity
+                  ),
+                };
+              })
+              .filter(
+                (item) =>
+                  item.role === "user" ||
+                  item.content.length > 0 ||
+                  (item.activities?.length ?? 0) > 0
+              )
           );
         }
       })();

@@ -5,9 +5,21 @@
 
 export type ChatRole = "user" | "assistant";
 
+/** 一轮回答期间的工具调用，按 call/result 配对后展示 */
+export interface ToolActivity {
+  id: string;
+  name: string;
+  detail: string;
+  state: "call" | "result";
+  isError?: boolean;
+  durationMs?: number;
+}
+
 export interface ChatMessage {
   role: ChatRole;
   content: string;
+  /** 旧会话与用户消息没有这个字段 */
+  activities?: ToolActivity[];
 }
 
 /** 带上游模型的历史轮数上限 */

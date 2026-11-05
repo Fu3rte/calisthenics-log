@@ -30,8 +30,8 @@ export function useModelProbe(draft: string) {
     const start = performance.now();
     const parts: string[] = [];
     try {
-      for await (const delta of streamCoachReply([PROBE], model, controller.signal)) {
-        parts.push(delta);
+      for await (const event of streamCoachReply([PROBE], model, controller.signal)) {
+        if (event.type === "delta") parts.push(event.text);
       }
       setResult({ ok: true, text: parts.join(""), ms: performance.now() - start });
     } catch (cause) {

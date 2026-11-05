@@ -2,12 +2,14 @@
 
 纯自重训练的本地记录看板。JSON 存数据，React 渲染，训练期间用命令行逐组录入。
 
+> 训练问答后端已移除，前端问答入口当前无法使用。训练记录与理论文档继续保留。
+
 ## 功能
 
 - **侧栏导航**：左侧玻璃导轨在「训练日志」与「训练问答」之间切换，`⌘/Ctrl + B` 收起，移动端变抽屉。
 - **训练日历**：按月查看训练日，点击切换当天记录。
 - **组次明细**：每组次数与逐组感受，备注里的 `RIR` 自动提取为徽章，按组展示。
-- **训练问答**：只读训练日志，流式回答；独立路由 `#/chat`。
+- **对话**：使用配置的模型流式回答；独立路由 `#/chat`。
 - **空态与错误态分离**：没有记录时给出提示，数据格式错误时明确报错。
 
 ## 技术栈
@@ -31,27 +33,29 @@ npm run dev
 其他脚本：
 
 ```bash
-npm run build      # 前端类型检查 + 构建，再编译后端
-npm run build:web  # 只构建前端到 frontend/dist
-npm run build:api  # 只编译后端到 backend/dist
-npm run preview    # 预览构建产物（同样带问答代理）
+npm run build      # 前后端构建
+npm run build:web  # 构建前端到 frontend/dist
+npm run build:api  # 编译后端到 backend/dist
+npm run preview    # 预览构建产物
 npm run lint       # 前后端类型检查
-npm run dev:api    # 只起问答后端，端口 8787
-npm run dev:web    # 只起 Vite
+npm run dev:api    # 启动后端
+npm run dev:web    # 启动 Vite
 ```
 
 ## 训练问答
 
-侧栏第二项，路由 `#/chat`。单页应用，切页不刷新，全站只有 `index.html` 一个入口。本地功能，不上服务器。
+默认打开的页面，路由 `#/chat`，侧栏第一项；训练日志在第二项，路由 `#/training`。单页应用，切页不刷新，全站只有 `index.html` 一个入口。本地功能，不上服务器。
 
-- 后端 `backend/` 用 DDD 分层：`domain` 放聚合与规则，`application` 放用例与端口，`infrastructure` 放文件读写、pi-ai 适配与 HTTP。
-- provider 目录不写死名单：`backend/src/infrastructure/llm/providerRegistry.ts` 取 pi-ai 出厂的 42 家，按各家的 auth 能力分组，环境变量名由 `auth.apiKey.resolve()` 离线问出。默认模型也不写死：`CHAT_MODEL` 以 `provider/model` 指定，未设置时前端取清单里第一个已配置 provider 的模型。
-- 侧栏底部「模型配置」条目开配置面板，分三区：模型（provider 分组 + 筛选 + 当前/全部范围）、参数（回复上限）、连接（已配置的 provider + 添加 Provider）。模型清单只下发已配置 provider 的家，未配置的走添加流程；模型与上限存浏览器 `localStorage`，每次请求随 `settings` 带上，服务端按 128–4000 与模型白名单校验。
-- 「添加 Provider」浮层三档：自定义（OpenAI / Anthropic 兼容端点）、订阅服务（OAuth，只读标注本机不接登录流）、API KEY（逐家列模型数，点选后回到连接区聚焦密钥框）。双认证的家在订阅服务与 API KEY 各出现一次。
+- 后端 `backend/` 的 `ai` 负责模型、provider 与凭证，`agent` 负责对话循环和 HTTP。
+- `read` / `write` / `edit` / `bash` 工具代码保留在 `backend/src/agent/tools/`，当前对话循环未注册工具。
+- provider 目录不写死名单：`backend/src/ai/providerRegistry.ts` 取 pi-ai 出厂的 42 家，按各家的 auth 能力分组，环境变量名由 `auth.apiKey.resolve()` 离线问出。默认模型也不写死：`CHAT_MODEL` 以 `provider/model` 指定，未设置时前端取清单里第一个已配置 provider 的模型。
+- 侧栏底部「模型配置」条目开配置面板，双栏：左栏列已配置的 provider（名称 + 模型数），底部是「添加 Provider」入口；右栏出选中那家的模型（超过 8 个才给筛选框）与「管理连接」。模型清单只下发已配置 provider 的家，未配置的走添加流程。本机 `localStorage` 只存选了哪个模型，回复上限不在面板里调，一律用服务端的 `CHAT_MAX_TOKENS`；请求只带 `settings.model`，缺省的上限由服务端补默认值，解析不出这个 `provider/model` 时报未知模型。
+- 「添加 Provider」浮层两组卡片：自定义（OpenAI / Anthropic 兼容端点，填 id、显示名、Base URL、API 格式、模型 id 一行一个）、API KEY（逐家列模型数，点选后回到右栏填密钥）。服务端清单里双认证的家仍按「订阅」与「API KEY」两条下发，面板只渲染可填密钥的那条，订阅登录本机不接。
+- 面板页脚「测试连接」用当前草稿模型发一条真实请求，走 `/api/chat` 同一条 SSE 通道，量出耗时与回复原文，失败时给服务端文案；不进会话历史。
 - 密钥只写 `backend/.env`（已 gitignore），读取顺序 `.env` → 系统环境变量，前者优先，不读其他工具的登录态。面板与接口只回掩码（末 4 位），浏览器不保存密钥；换密钥不用重启，下一次请求即生效。自定义端点的定义写 `backend/providers.json`（同为 gitignore 的本机数据，只存端点与模型 id，不存密钥），删除端点会连带抹掉它在 `.env` 里的那一行。
 - Bedrock、Azure、Vertex、Cloudflare 网关与 Workers AI 需要 region / resource / account 等额外字段，这五家不进列表；只有分类器模型的家（如 typesafe）由「零模型不进列表」这条规则挡掉。
-- 每轮请求重新读取 `backend/训练日志.json` 拼进 system prompt，改完数据下一句就生效。
-- 会话存在浏览器 `localStorage`，最多带 12 轮；单条输入上限 2000 字，回复上限默认 900 tokens。
+- 对话请求携带浏览器中的历史消息，由 Agent 循环发送给模型。
+- 会话存在浏览器 `localStorage`，最多带 12 轮；单条输入上限 2000 字，回复上限取 `CHAT_MAX_TOKENS`（默认 900）。
 
 ### 接口
 
@@ -82,10 +86,8 @@ frontend/                       前端包（React + Vite）
   vite.config.ts                构建产物到 frontend/dist
 backend/                        后端包（问答 API）+ 训练数据
   src/
-    domain/training/            TrainingLog 聚合 + 仓库端口
-    domain/coaching/            轮次校验 + 系统提示 + 模型设置
-    application/                AskCoach + CoachSetup 用例 · CoachModel/CoachCredentials/ProviderCatalog/CustomProviderStore 端口
-    infrastructure/             文件仓库 · pi-ai 适配 · HTTP/SSE
+    ai/                         模型、provider、凭证与配置
+    agent/                      对话循环、HTTP/SSE 与工具代码
     main.ts                     组合根
   训练日志.json / 训练快照.json   个人记录（gitignore），含 .example.json 与 .schema.json
   package.json                  pi-ai 依赖
