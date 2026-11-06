@@ -1,6 +1,7 @@
 /**
  * 对话传输适配器：POST /api/chat，逐帧读 SSE 的 data 段。
- * 产出正文增量与工具活动，出错抛异常，取消靠 AbortSignal。
+ * 会话 id 由服务端第一帧给出，正文与工具活动随后增量到达。
+ * 出错抛异常，取消靠 AbortSignal。
  */
 import type { ChatMessage } from "@/features/coach-chat/model/chat";
 
@@ -19,13 +20,16 @@ interface ToolFrame {
 }
 
 interface ChatFrame {
+  sessionId?: string;
   delta?: string;
   tool?: ToolFrame;
   error?: string;
   done?: boolean;
+  aborted?: boolean;
 }
 
 export type ChatStreamEvent =
+  | { type: "session"; id: string }
   | { type: "delta"; text: string }
   | { type: "tool_call"; id: string; name: string; detail: string }
   | {
@@ -35,7 +39,17 @@ export type ChatStreamEvent =
       detail: string;
       isError: boolean;
       durationMs: number;
-    };
+    }
+  | { type: "done"; aborted: boolean };
+
+export interface CoachReplyInput {
+  /** null 表示开一段新会话，服务端在 session 帧里回 id */
+  sessionId: string | null;
+  message: string;
+  model: string | null;
+  /** 探针用：服务端不落盘、不建会话 */
+  ephemeral?: boolean;
+}
 
 async function readErrorMessage(response: Response): Promise<string> {
   try {
@@ -49,20 +63,55 @@ async function readErrorMessage(response: Response): Promise<string> {
   return `服务返回 ${response.status}`;
 }
 
-/** model 为 null 时不带 settings，由服务端用它的默认模型 */
-export async function* streamCoachReply(
+function lastUserText(messages: ChatMessage[]): string {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index].role === "user") return messages[index].content;
+  }
+  return "";
+}
+
+/** model 为 null 时不带 model 字段，由服务端用它的默认模型 */
+export function streamCoachReply(
+  input: CoachReplyInput,
+  signal: AbortSignal
+): AsyncGenerator<ChatStreamEvent, void, void>;
+/**
+ * 兼容模型设置里的连通性探针（useModelProbe 仍在旧调用上）：
+ * 取最后一条 user 文本，以临时运行发送，服务端不建会话也不落盘。
+ */
+export function streamCoachReply(
   messages: ChatMessage[],
   model: string | null,
   signal: AbortSignal
+): AsyncGenerator<ChatStreamEvent, void, void>;
+export async function* streamCoachReply(
+  inputOrMessages: CoachReplyInput | ChatMessage[],
+  modelOrSignal: string | null | AbortSignal,
+  legacySignal?: AbortSignal
 ): AsyncGenerator<ChatStreamEvent, void, void> {
+  const legacy = Array.isArray(inputOrMessages);
+  const input: CoachReplyInput = legacy
+    ? {
+        sessionId: null,
+        message: lastUserText(inputOrMessages),
+        model: (modelOrSignal as string | null) ?? null,
+        ephemeral: true,
+      }
+    : (inputOrMessages as CoachReplyInput);
+  const signal = legacy
+    ? (legacySignal as AbortSignal)
+    : (modelOrSignal as AbortSignal);
+
   let response: Response;
   try {
     response = await fetch(ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        messages,
-        ...(model ? { settings: { model } } : {}),
+        ...(input.sessionId ? { sessionId: input.sessionId } : {}),
+        message: input.message,
+        ...(input.model ? { model: input.model } : {}),
+        ...(input.ephemeral ? { ephemeral: true } : {}),
       }),
       signal,
     });
@@ -91,8 +140,16 @@ export async function* streamCoachReply(
         const line = chunk.split("\n").find((row) => row.startsWith("data: "));
         if (!line) continue;
         const frame = JSON.parse(line.slice(6)) as ChatFrame;
+
+        /* 错误帧是终止帧，先抛出去，后面的增量不再处理 */
         if (frame.error) throw new Error(frame.error);
-        if (frame.delta) yield { type: "delta", text: frame.delta };
+
+        if (frame.sessionId) {
+          yield { type: "session", id: frame.sessionId };
+        }
+        if (typeof frame.delta === "string" && frame.delta.length > 0) {
+          yield { type: "delta", text: frame.delta };
+        }
         if (frame.tool?.state === "call") {
           yield {
             type: "tool_call",
@@ -109,6 +166,10 @@ export async function* streamCoachReply(
             isError: frame.tool.isError ?? false,
             durationMs: frame.tool.durationMs ?? 0,
           };
+        }
+        if (frame.done) {
+          yield { type: "done", aborted: frame.aborted ?? false };
+          return;
         }
       }
     }

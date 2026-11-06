@@ -3,7 +3,6 @@
  */
 import { Dashboard } from "@/app/Dashboard";
 import { useTrainingLog } from "@/features/training-log/hooks/useTrainingLog";
-import { SidebarTrigger } from "@/shared/ui/sidebar";
 
 const ERROR_MSG =
   "训练日志读不出来。确认 训练日志.json 在同目录，格式符合 schema。";
@@ -23,7 +22,6 @@ export function TrainingLogPage() {
     return (
       <div className="app-scroll h-full">
         <div className="app-main">
-          <SidebarTrigger className="md:hidden" />
           <div className="glass-panel px-6 py-8">
             <p className="text-[14.5px] leading-[1.8]">{ERROR_MSG}</p>
             <p className="mt-2 text-[13px] text-muted-foreground">

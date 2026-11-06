@@ -1,32 +1,36 @@
-import { useEffect, useId, useRef } from "react";
+import { useId, useLayoutEffect } from "react";
+import type { RefObject } from "react";
 import { MAX_INPUT } from "@/features/coach-chat/model/chat";
-import { GlassButton } from "@/shared/ui/glass-button";
+import { ArrowUp, StopSquare } from "@/shared/ui/icons";
 
 interface ChatComposerProps {
   value: string;
   pending: boolean;
+  /** 焦点归页面管：空态与对话态共用同一份引用 */
+  inputRef: RefObject<HTMLTextAreaElement | null>;
   onChange: (value: string) => void;
   onSend: () => void;
   onStop: () => void;
 }
 
-const ACTION =
-  "chat-input-action inline-flex h-11 min-w-[76px] items-center justify-center rounded-full px-4 text-[13.5px] font-medium";
-
 export function ChatComposer({
   value,
   pending,
+  inputRef,
   onChange,
   onSend,
   onStop,
 }: ChatComposerProps) {
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const inputId = useId();
   const empty = value.trim().length === 0;
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
+  /* 单行起步随内容长高，封顶 168 后交给内部滚动 */
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  }, [value, inputRef]);
 
   return (
     <div className="chat-composer">
@@ -38,9 +42,9 @@ export function ChatComposer({
           id={inputId}
           ref={inputRef}
           value={value}
-          rows={2}
+          rows={1}
           maxLength={MAX_INPUT}
-          placeholder="问点具体的，比如「上周引体总次数」"
+          placeholder="问点具体的，比如「引体该不该加组」"
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
             if (
@@ -54,24 +58,28 @@ export function ChatComposer({
           }}
           className="chat-input"
         />
-        {pending ? (
-          <GlassButton
-            onClick={onStop}
-            aria-label="停止生成"
-            className={ACTION}
-          >
-            停止
-          </GlassButton>
-        ) : (
-          <GlassButton
-            variant="ink"
-            onClick={onSend}
-            disabled={empty}
-            className={`${ACTION} chat-send`}
-          >
-            发送
-          </GlassButton>
-        )}
+        <div className="chat-input-actions">
+          {pending ? (
+            <button
+              type="button"
+              className="chat-stop-circle"
+              aria-label="停止生成"
+              onClick={onStop}
+            >
+              <StopSquare />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="chat-send-circle"
+              aria-label="发送"
+              disabled={empty}
+              onClick={onSend}
+            >
+              <ArrowUp />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

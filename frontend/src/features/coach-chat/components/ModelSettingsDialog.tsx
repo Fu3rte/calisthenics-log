@@ -3,7 +3,7 @@
  *
  * 入口在侧栏底部，两个路由共用，所以由壳层挂载而不是聊天页。
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -115,6 +115,14 @@ function SettingsPanel({
 
 export function CoachSettingsHost() {
   const { model, open, setOpen, save, reset } = useChatSettings();
+  /* 打开时记下触发元素，关闭后焦点回到原处 */
+  const openerRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) openerRef.current = active;
+  }, [open]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -122,7 +130,11 @@ export function CoachSettingsHost() {
         className="w-[min(680px,calc(100vw-32px))]"
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          document.getElementById("model-settings-trigger")?.focus();
+          const opener = openerRef.current;
+          const target = opener?.isConnected
+            ? opener
+            : document.getElementById("model-settings-trigger");
+          target?.focus();
         }}
       >
         <SettingsPanel

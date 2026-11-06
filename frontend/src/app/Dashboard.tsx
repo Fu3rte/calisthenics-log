@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import { DayRecord } from "@/features/training-log/components/DayRecord";
 import { TrainingCalendar } from "@/features/training-log/components/TrainingCalendar";
-import { SidebarTrigger } from "@/shared/ui/sidebar";
 import {
   currentMonthKey,
   monthParts,
@@ -46,9 +45,6 @@ export function Dashboard({ sessions: rawSessions }: { sessions: Session[] }) {
   return (
     <div className="app-scroll h-full">
       <main className="app-main">
-        {/* 移动端抽屉只有这一个开启入口 */}
-        <SidebarTrigger className="md:hidden" />
-
         {sessions.length === 0 ? (
           <div className="glass-panel is-text px-6 py-10">
             <p className="text-[14.5px] leading-[1.8] text-muted-foreground">

@@ -1,17 +1,11 @@
 import { useEffect, useRef } from "react";
-import {
-  SUGGESTIONS,
-  type ChatMessage,
-  type ToolActivity,
-} from "@/features/coach-chat/model/chat";
-import { GlassButton } from "@/shared/ui/glass-button";
+import type { ChatMessage, ToolActivity } from "@/features/coach-chat/model/chat";
 import { Message, MessageContent } from "@/shared/ui/message";
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
   pending: boolean;
   error: string | null;
-  onPick: (text: string) => void;
 }
 
 function ToolActivityRow({ activity }: { activity: ToolActivity }) {
@@ -37,12 +31,7 @@ function ToolActivityRow({ activity }: { activity: ToolActivity }) {
   );
 }
 
-export function ChatMessages({
-  messages,
-  pending,
-  error,
-  onPick,
-}: ChatMessagesProps) {
+export function ChatMessages({ messages, pending, error }: ChatMessagesProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,25 +41,6 @@ export function ChatMessages({
 
   return (
     <div ref={listRef} role="log" aria-live="polite" className="chat-log">
-      {messages.length === 0 && (
-        <div className="chat-empty">
-          <p className="chat-empty-lead">
-            问训练记录里的细节。日志每轮重新读取，改完数据下一句就生效。
-          </p>
-          <div className="chat-empty-actions">
-            {SUGGESTIONS.map((item) => (
-              <GlassButton
-                key={item}
-                onClick={() => onPick(item)}
-                className="inline-flex min-h-11 max-w-full items-center rounded-full px-4 py-2 text-[13px] leading-[1.5]"
-              >
-                {item}
-              </GlassButton>
-            ))}
-          </div>
-        </div>
-      )}
-
       {messages.map((message, index) => {
         const last = index === messages.length - 1;
         const streaming = pending && last;
@@ -94,10 +64,7 @@ export function ChatMessages({
               {activities.length > 0 && (
                 <div className="chat-tools" aria-label="工具活动">
                   {activities.map((activity) => (
-                    <ToolActivityRow
-                      key={activity.id}
-                      activity={activity}
-                    />
+                    <ToolActivityRow key={activity.id} activity={activity} />
                   ))}
                 </div>
               )}
@@ -108,6 +75,9 @@ export function ChatMessages({
                   {message.content || "正在生成回答"}
                   {streaming && (
                     <span className="chat-pending-dot" aria-hidden="true" />
+                  )}
+                  {message.stopped && (
+                    <span className="chat-stopped">已停止</span>
                   )}
                 </div>
               )}

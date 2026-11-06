@@ -7,7 +7,6 @@ import { RouteStage } from "@/app/RouteStage";
 import { useRoute } from "@/app/router";
 import { CoachSettingsHost } from "@/features/coach-chat/components/ModelSettingsDialog";
 import { ChatSettingsProvider } from "@/features/coach-chat/hooks/ChatSettingsProvider";
-import { SidebarProvider } from "@/shared/ui/sidebar";
 import { TooltipProvider } from "@/shared/ui/tooltip";
 
 const TITLES = {
@@ -23,7 +22,7 @@ export default function App() {
   }, [route]);
 
   return (
-    <SidebarProvider className="app-frame">
+    <div className="app-frame flex h-dvh w-full overflow-hidden">
       <TooltipProvider>
         <ChatSettingsProvider>
           <AppSidebar />
@@ -36,6 +35,6 @@ export default function App() {
           <CoachSettingsHost />
         </ChatSettingsProvider>
       </TooltipProvider>
-    </SidebarProvider>
+    </div>
   );
 }

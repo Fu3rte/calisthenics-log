@@ -1,15 +1,13 @@
 /**
- * 自定义兼容端点表单：OpenAI / Anthropic 两种 API，手填 baseUrl 与模型 id。
+ * 自定义兼容端点表单：手填 baseUrl 与模型 id。
+ * 目前只支持 OpenAI Chat Completions 兼容接口。
  * 定义写服务端 providers.json，密钥写 .env，两个动作一次提交完成。
  */
 import { useState } from "react";
 import { FieldHint, SectionTitle } from "@/features/coach-chat/components/SettingsAtoms";
 import type { CustomProviderApi } from "@/features/coach-chat/model/chat";
 
-const API_CHOICES: { value: CustomProviderApi; label: string }[] = [
-  { value: "openai-completions", label: "OpenAI completions" },
-  { value: "anthropic-messages", label: "Anthropic messages" },
-];
+const CUSTOM_API: CustomProviderApi = "openai-completions";
 
 interface CustomProviderFormProps {
   providerId: string;
@@ -44,7 +42,6 @@ export function CustomProviderForm({
   const [id, setId] = useState(providerId);
   const [name, setName] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
-  const [api, setApi] = useState<CustomProviderApi>("openai-completions");
   const [models, setModels] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);
@@ -60,7 +57,7 @@ export function CustomProviderForm({
     setError(null);
     try {
       await onSubmit(
-        { id: id.trim(), name: name.trim(), baseUrl: baseUrl.trim(), api, models: parsedModels },
+        { id: id.trim(), name: name.trim(), baseUrl: baseUrl.trim(), api: CUSTOM_API, models: parsedModels },
         apiKey.trim()
       );
     } catch (cause) {
@@ -85,7 +82,7 @@ export function CustomProviderForm({
           spellCheck={false}
           className="settings-input"
         />
-        <FieldHint>小写字母、数字与连字符，密钥写进 <code className="settings-code">{id.trim() ? `${id.trim().replace(/-/g, "_").toUpperCase()}_API_KEY` : "…_API_KEY"}</code>。</FieldHint>
+        <FieldHint>以小写字母开头，可含小写字母、数字与连字符，密钥写进 <code className="settings-code">{id.trim() ? `${id.trim().replace(/-/g, "_").toUpperCase()}_API_KEY` : "…_API_KEY"}</code>。</FieldHint>
       </div>
 
       <div className="settings-field">
@@ -113,24 +110,6 @@ export function CustomProviderForm({
           spellCheck={false}
           className="settings-input"
         />
-      </div>
-
-      <div className="settings-field">
-        <label className="settings-field-label" htmlFor="custom-api">
-          API 格式
-        </label>
-        <select
-          id="custom-api"
-          value={api}
-          onChange={(event) => setApi(event.target.value as CustomProviderApi)}
-          className="settings-input"
-        >
-          {API_CHOICES.map((choice) => (
-            <option key={choice.value} value={choice.value}>
-              {choice.label}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div className="settings-field">

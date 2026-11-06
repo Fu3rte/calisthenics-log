@@ -58,7 +58,10 @@
   --panel-pad-x: 20px;
   --panel-pad-y: 20px;
   --dur-fast: 140ms;
+  /* 侧栏/导轨这类整块收放：比 --dur-fast 长一档，肉眼跟得上又不拖沓 */
+  --dur-slow: 240ms;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-inout: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @theme inline {
@@ -546,8 +549,45 @@
 
 .day-panel {
   padding: var(--panel-pad-y) var(--panel-pad-x);
-  /* 记录面板承载长备注，填充比日历再实一档 */
-  background-color: var(--glass-fill-text);
+}
+
+.calendar-panel,
+.day-panel {
+  background-color: hsl(var(--foreground) / 0.045);
+  background-image: linear-gradient(
+    135deg,
+    hsl(var(--background) / 0.7),
+    hsl(var(--background) / 0.12) 42%,
+    hsl(var(--foreground) / 0.035)
+  );
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  border-color: hsl(var(--foreground) / 0.085);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--background) / 0.95),
+    inset 1px 0 0 hsl(var(--background) / 0.5),
+    inset -1px 0 0 hsl(var(--background) / 0.3),
+    inset 0 -1px 1px hsl(var(--foreground) / 0.07),
+    0 2px 4px hsl(var(--foreground) / 0.035),
+    0 16px 32px -24px hsl(var(--foreground) / 0.2);
+}
+
+.calendar-panel::before,
+.day-panel::before {
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at 85% 100%,
+    hsl(var(--foreground) / 0.045),
+    transparent 60%
+  );
+  filter: blur(12px);
+}
+
+.calendar-panel::after,
+.day-panel::after {
+  display: none;
 }
 
 .day-head {
@@ -805,72 +845,629 @@
   }
 }
 
-/* ============================================================
-   训练问答：一块承载长文本的玻璃面
-   填充比日历面板更实，扫光关闭，保证正文对比度
-   ============================================================ */
 .chat-page {
   display: flex;
   height: 100%;
   min-height: 0;
   flex-direction: column;
-  padding: 24px 16px 16px;
 }
 
-.chat-column {
-  display: flex;
-  height: 100%;
-  min-height: 0;
-  width: 100%;
-  max-width: 840px;
-  margin-inline: auto;
-  flex-direction: column;
-  gap: 12px;
-}
-
-@media (min-width: 960px) {
-  .chat-page {
-    padding: 40px 28px 32px;
-  }
-}
-
+/* 外层 .chat-surface 已经是一整块玻璃，这里不再叠第二层模糊，
+   只留「消息 + 输入」的纵向布局 */
 .chat-panel {
-  background-color: var(--glass-fill-solid);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
-  backdrop-filter: var(--glass-blur-strong);
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
+/* 行宽上限 760：用内缩而不是 max-width，滚动条仍贴着面板右缘 */
 .chat-log {
   display: flex;
   min-height: 0;
   flex: 1 1 auto;
   flex-direction: column;
   gap: 16px;
-  padding: 20px;
+  padding: 8px max(20px, calc((100% - 760px) / 2)) 16px;
   overflow-x: hidden;
   overflow-y: auto;
 }
 
-.chat-empty {
-  /* 空状态是这一屏唯一内容，垂直居中而不是贴顶 */
-  margin: auto;
-  max-width: 34rem;
-  padding-block: 24px;
+/* 空态 hero：标题、副文案、输入胶囊与建议问题整块居中 */
+.chat-hero-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 20px;
+  overflow-y: auto;
+}
+
+.chat-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(720px, 100%);
   text-align: center;
 }
 
-.chat-empty-lead {
-  font-size: 14px;
-  line-height: 1.8;
+.chat-hero-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.chat-hero-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
   color: hsl(var(--muted-foreground));
 }
 
-.chat-empty-actions {
+.chat-hero .chat-composer {
+  width: 100%;
+  margin-top: 24px;
+}
+
+.chat-suggest-row {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 18px;
+}
+
+.chat-suggest {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.5);
+  font-size: 12.5px;
+  color: hsl(var(--muted-foreground));
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.chat-suggest:hover {
+  color: var(--ink);
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(29, 29, 31, 0.16);
+}
+
+/* ============================================================
+   会话导轨：宽容器与对话框并排，窄容器收进浮层
+   ============================================================ */
+.chat-shell {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin-inline: auto;
+  flex-direction: column;
+}
+
+/* 对话列自己的头部行：左操作区、中会话名、右占位保持标题居中 */
+.chat-topbar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  min-height: 68px;
+  flex: none;
+  padding: 0 16px;
+}
+
+.chat-topbar-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(29, 29, 31, 0.74);
+  max-width: 40ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-session-trigger {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.chat-session-caret {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--muted-foreground));
+  transition: transform var(--dur-fast) ease;
+}
+
+.chat-session-trigger[data-state="open"] .chat-session-caret {
+  transform: rotate(180deg);
+}
+
+.chat-rail-slot {
+  display: none;
+  min-height: 0;
+}
+
+.chat-topbar-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  place-items: center;
+  border-radius: 12px;
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-topbar-button:hover {
+  background-color: rgba(29, 29, 31, 0.06);
+  color: var(--ink);
+}
+
+.chat-surface {
+  /* 0/1 标记供 JS 读：拖拽条只在宽容器里挂，断点只写在这里一份 */
+  --chat-surface-wide: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background-color: hsl(var(--background));
+  transition: grid-template-columns var(--dur-slow) var(--ease-inout);
+}
+
+/* 拖拽时必须跟手：宽度不能有补间，也别让文字被顺带选中 */
+.chat-surface[data-resizing="true"] {
+  transition: none;
+  cursor: col-resize;
+  user-select: none;
+}
+
+.chat-conversation {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+}
+
+/* 拖拽条压在发丝线上：本体 2px，::before 把热区撑到 8px */
+.chat-resizer {
+  position: relative;
+  z-index: 1;
+  display: none;
+  justify-self: end;
+  width: 2px;
+  margin-right: -1px;
+  background-color: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  transition: background-color var(--dur-fast) ease;
+}
+
+.chat-resizer::before {
+  content: "";
+  position: absolute;
+  inset: 0 -3px;
+}
+
+.chat-resizer:hover,
+.chat-surface[data-resizing="true"] .chat-resizer {
+  background-color: rgba(29, 29, 31, 0.18);
+}
+
+.chat-resizer:focus-visible {
+  outline: 2px solid rgba(29, 29, 31, 0.4);
+  outline-offset: 3px;
+}
+
+@container (min-width: 760px) {
+  .chat-surface {
+    /* 与 JS 共用的宽窄标记，值变化只写在这一处断点里 */
+    --chat-surface-wide: 1;
+    grid-template-columns: var(--rail-w, 252px) minmax(0, 1fr);
+  }
+
+  .chat-rail-slot {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    border-right: 1px solid var(--glass-rule);
+  }
+
+  /* 收起时整条线一起消失，只改颜色会留 1px 的空隙 */
+  .chat-shell[data-rail="closed"] .chat-rail-slot {
+    border-right-width: 0;
+  }
+
+  /* 收起时宽度压到 200 以下也不重排内容，多出来的部分交给槽位裁掉 */
+  .chat-rail-slot > .chat-rail {
+    width: 100%;
+    min-width: 200px;
+    flex: none;
+    transition:
+      opacity var(--dur-slow) var(--ease-inout),
+      transform var(--dur-slow) var(--ease-inout);
+  }
+
+  .chat-shell[data-rail="closed"] .chat-rail-slot > .chat-rail {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  .chat-resizer {
+    display: block;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .chat-conversation {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .chat-session-trigger {
+    display: none;
+  }
+}
+
+.chat-rail {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+}
+
+@container (min-width: 760px) {
+  .chat-rail {
+    padding: 8px 12px 12px;
+    overflow: hidden;
+  }
+}
+
+/* 导轨头部行：左新建、右收起开关 */
+.chat-rail-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 52px;
+  flex: none;
+  padding-right: 4px;
+}
+
+/* 新建对话：安静的行按钮，悬停才浮出底色 */
+.chat-rail-new {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(29, 29, 31, 0.74);
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.chat-rail-new:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+.chat-rail-new svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chat-rail-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin-left: auto;
+  flex: none;
+  border-radius: 999px;
+  color: rgba(29, 29, 31, 0.6);
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+.chat-rail-toggle:hover {
+  background-color: rgba(29, 29, 31, 0.045);
+  color: var(--ink);
+}
+
+/* 浮层里没有可收起的侧栏，开关不出现 */
+.chat-rail-pop .chat-rail-toggle {
+  display: none;
+}
+
+.chat-rail-body {
+  display: flex;
+  min-height: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* 分组标题：灰、小、松一点字距，只做分区不抢会话名 */
+.chat-rail-group {
+  margin: 0;
+  padding: 2px 11px 0;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-rail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-rail-item {
+  position: relative;
+  display: flex;
+  min-height: 40px;
+  align-items: stretch;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  transition:
+    background-color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+.chat-rail-item:hover {
+  background-color: rgba(29, 29, 31, 0.032);
+  border-color: rgba(29, 29, 31, 0.04);
+}
+
+/* 选中项用一层极淡的墨洗压住白底：白玻璃在纯白面板上看不出落差，
+   这里改成墨洗 + 顶部白高光，与日历的墨色选中珠同一套语言 */
+.chat-rail-item.is-active,
+.chat-rail-item.is-active:hover {
+  background-color: rgba(29, 29, 31, 0.082);
+  border-color: rgba(29, 29, 31, 0.055);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 -1px 0 rgba(29, 29, 31, 0.03),
+    0 6px 16px -14px rgba(29, 29, 31, 0.5);
+}
+
+.chat-rail-select {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  /* 右侧常驻 76px，悬停浮出的操作按钮不会推挤文字 */
+  padding: 6px 76px 6px 11px;
+  border-radius: inherit;
+  text-align: left;
+}
+
+.chat-rail-name {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: rgba(29, 29, 31, 0.74);
+  transition: color var(--dur-fast) ease;
+}
+
+.chat-rail-item:hover .chat-rail-name,
+.chat-rail-item:focus-within .chat-rail-name,
+.chat-rail-item.is-active .chat-rail-name {
+  color: var(--ink);
+}
+
+.chat-rail-item.is-active .chat-rail-name {
+  font-weight: 600;
+}
+
+.chat-rail-actions {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  transform: translateY(-50%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.chat-rail-item:hover .chat-rail-actions,
+.chat-rail-item:focus-within .chat-rail-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 触屏没有可靠的 hover，操作按钮常驻 */
+@media (hover: none) {
+  .chat-rail-actions {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.chat-rail-action {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 3px;
+  border-radius: 9px;
+  color: hsl(var(--muted-foreground));
+  transition:
+    background-color var(--dur-fast) ease,
+    color var(--dur-fast) ease;
+}
+
+/* 视觉 28px，触控补到 44px；外扩层透明，不改变布局 */
+.chat-rail-action::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: inherit;
+}
+
+.chat-rail-action:hover {
+  background-color: rgba(29, 29, 31, 0.06);
+  color: var(--ink);
+}
+
+.chat-rail-action svg {
+  width: 15px;
+  height: 15px;
+}
+
+.chat-rail-remove.is-confirming {
+  color: hsl(var(--destructive));
+  font-weight: 600;
+}
+
+.chat-rail-confirm {
+  display: block;
+  padding-inline: 2px;
+  font-size: 10.5px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.chat-rail-rename {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 11px;
+  border: 1px solid rgba(29, 29, 31, 0.18);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.4;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(29, 29, 31, 0.06);
+}
+
+.chat-rail-rename::placeholder {
+  color: hsl(var(--muted-foreground));
+}
+
+.chat-rail-error {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid hsl(var(--destructive) / 0.22);
+  border-radius: 10px;
+  background-color: hsl(var(--destructive) / 0.05);
+  color: hsl(var(--destructive));
+  font-size: 11.5px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.chat-rail-empty {
+  margin: 0;
+  padding: 12px 10px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: hsl(var(--muted-foreground));
+}
+
+/* 窄屏浮层：与对话框同一档玻璃，列表自己内滚 */
+.chat-rail-pop {
+  /* 触发按钮本身距左缘约 68px，宽度按剩余空间收，
+     避免 align=start 时右边缘顶到屏幕 */
+  width: min(320px, calc(100vw - 84px));
+  max-height: min(70dvh, 560px);
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+.chat-rail-pop .chat-rail {
+  padding: 0;
+}
+
+/* 浮层只在窄屏出现，触控优先：操作按钮常驻，不依赖 hover */
+.chat-rail-pop .chat-rail-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-rail-pop .chat-rail-body {
+  /* 给新建按钮与内边距留出空间，短屏也不会把按钮顶出面板 */
+  max-height: min(calc(70dvh - 74px), 420px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-session-caret,
+  .chat-rail-item,
+  .chat-rail-name,
+  .chat-rail-actions,
+  .chat-rail-action,
+  .chat-rail-new,
+  .chat-rail-toggle,
+  .chat-topbar-button,
+  .sidebar-menu-button,
+  .chat-resizer,
+  .chat-input-wrap,
+  .chat-suggest,
+  .chat-send-circle,
+  .chat-stop-circle,
+  .chat-rail-slot > .chat-rail {
+    transition: none;
+  }
+
+  /* 收起/展开直接落位，不做列宽补间 */
+  .chat-surface {
+    transition: none;
+  }
+
+  /* 浮层直接落位，不做淡入 */
+  .chat-rail-pop {
+    animation: none;
+  }
 }
 
 /* 用户消息：showcase 的 .box 搬进气泡
@@ -1025,16 +1622,13 @@
   }
 }
 
-/* 回答：安静的白玻璃，与用户消息形成清晰的阅读层级 */
+/* 回答：纯段落，通栏排布，不再套玻璃卡片 */
 .chat-answer {
-  max-width: 92%;
-  align-self: flex-start;
-  padding: 12px 14px;
-  border: 1px solid rgba(29, 29, 31, 0.07);
-  border-radius: 6px 18px 18px 18px;
-  background-color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
+  align-self: stretch;
+  max-width: 100%;
+  font-size: 14.5px;
   line-height: 1.85;
+  color: hsl(var(--foreground));
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1052,6 +1646,16 @@
   background: currentColor;
   vertical-align: middle;
   animation: chat-pulse 1.4s ease-in-out infinite;
+}
+
+/* 用户中途停止：正文保留，右下角补一行状态 */
+.chat-stopped {
+  display: block;
+  margin-top: 4px;
+  text-align: right;
+  font-size: 10.5px;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
 }
 
 @keyframes chat-pulse {
@@ -1078,32 +1682,46 @@
   overflow-wrap: anywhere;
 }
 
-.chat-composer {
-  padding: 12px 20px 16px;
-  border-top: 1px solid var(--glass-rule);
+/* 对话态：输入区与消息流同一条 760 行宽基准 */
+.chat-composer-zone {
+  flex: none;
+  padding: 8px max(20px, calc((100% - 760px) / 2)) 0;
 }
 
+.chat-composer {
+  width: 100%;
+}
+
+/* 胶囊输入框：聚焦时描边与投影一起加深 */
 .chat-input-wrap {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
-  padding: 10px 10px 10px 14px;
+  padding: 8px 8px 8px 16px;
   border: 1px solid rgba(29, 29, 31, 0.1);
-  border-radius: 14px;
-  background-color: rgba(255, 255, 255, 0.72);
+  border-radius: 26px;
+  background-color: rgba(255, 255, 255, 0.66);
+  -webkit-backdrop-filter: blur(6px) saturate(1.6);
+  backdrop-filter: blur(6px) saturate(1.6);
+  box-shadow:
+    0 1px 2px rgba(29, 29, 31, 0.04),
+    0 14px 30px -22px rgba(29, 29, 31, 0.3);
   transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 
-.chat-input-wrap:hover {
-  border-color: rgba(29, 29, 31, 0.18);
+.chat-input-wrap:focus-within {
+  border-color: rgba(29, 29, 31, 0.2);
+  box-shadow:
+    0 1px 2px rgba(29, 29, 31, 0.04),
+    0 14px 30px -22px rgba(29, 29, 31, 0.3),
+    0 0 0 3px rgba(29, 29, 31, 0.06);
 }
 
 .chat-input {
   flex: 1;
   min-width: 0;
-  min-height: 42px;
   max-height: 168px;
-  padding: 0;
+  padding: 7px 0;
   border: 0;
   background: transparent;
   color: hsl(var(--foreground));
@@ -1121,15 +1739,59 @@
   outline: none;
 }
 
-.chat-input-action {
-  flex-shrink: 0;
-  align-self: flex-end;
+/* 右侧操作区：发送/停止圆钮 */
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
 }
 
-.chat-send:disabled,
-.chat-send[aria-disabled="true"] {
-  opacity: 0.4;
+.chat-send-circle,
+.chat-stop-circle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: 999px;
+  transition: background-color var(--dur-fast) ease, opacity var(--dur-fast) ease;
+}
+
+.chat-send-circle {
+  background-color: var(--ink);
+  color: #fff;
+}
+
+.chat-send-circle:hover {
+  background-color: #111113;
+}
+
+.chat-send-circle:disabled {
+  opacity: 0.35;
   cursor: not-allowed;
+}
+
+.chat-stop-circle {
+  border: 1px solid rgba(29, 29, 31, 0.14);
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+}
+
+.chat-stop-circle:hover {
+  background-color: #fff;
+}
+
+/* 列底免责声明：空态与对话态共用 */
+.chat-foot {
+  flex: none;
+  margin: 0;
+  padding: 10px 16px 12px;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.75;
 }
 
 /* 模型设置弹层：与对话面板同一档玻璃 */
@@ -1619,85 +2281,30 @@
   display: none;
 }
 
-/* ============================================================
-   侧栏：液态玻璃导轨
-   选中指示器是一块会滑动的玻璃片，由 GSAP 写 x / y / width / height
-   ============================================================ */
 .sidebar-shell {
-  border-radius: 26px;
-}
-
-/* 移动端抽屉：盖在页面内容上，需要更实的底与更大的模糊，避免文字透上来 */
-.glass-drawer {
-  background-color: rgba(252, 252, 253, 0.88);
-  -webkit-backdrop-filter: blur(22px) saturate(1.7);
-  backdrop-filter: blur(22px) saturate(1.7);
-}
-
-/* 抽屉盖在内容上，扫光会变成一团白晕，关掉 */
-.glass-drawer::after {
-  display: none;
-}
-
-.sidebar-brand-row {
-  transition: gap 260ms ease;
-}
-
-/* 折叠时只留图标：文字靠 max-width 收起，不改变条目高度 */
-.sidebar-label {
-  display: block;
-  max-width: 220px;
-  opacity: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  transition:
-    max-width 320ms ease 50ms,
-    opacity 200ms ease 110ms;
-}
-
-.sidebar-shell[data-state="collapsed"] .sidebar-label {
-  max-width: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    max-width 240ms ease,
-    opacity 100ms ease;
-}
-
-.sidebar-shell[data-state="collapsed"] .sidebar-brand-row {
-  justify-content: center;
-  gap: 0;
-  padding-inline: 4px;
-}
-
-.sidebar-icon-btn {
-  color: rgba(29, 29, 31, 0.6);
-  transition:
-    background-color var(--dur-fast) ease,
-    color var(--dur-fast) ease;
-}
-
-.sidebar-icon-btn:hover {
-  background-color: rgba(29, 29, 31, 0.045);
-  color: var(--ink);
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 64px;
+  flex: none;
+  flex-direction: column;
+  padding: 12px 10px;
+  background-color: hsl(var(--background));
 }
 
 .sidebar-menu-button {
   position: relative;
   z-index: 1;
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  min-height: 52px;
-  padding: 6px 12px;
-  border-radius: 17px;
-  color: rgba(29, 29, 31, 0.74);
-  text-align: left;
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 14px;
+  color: hsl(var(--muted-foreground));
   -webkit-tap-highlight-color: transparent;
   transition:
-    color 180ms ease,
-    background-color 180ms ease;
+    color var(--dur-fast) ease,
+    background-color var(--dur-fast) ease;
 }
 
 .sidebar-menu-button:hover {
@@ -1711,92 +2318,21 @@
   background-color: transparent;
 }
 
-.sidebar-menu-button[data-active="true"] .sidebar-label-desc {
-  color: rgba(29, 29, 31, 0.52);
-}
-
 .sidebar-nav-icon {
   display: grid;
   place-items: center;
-  flex: none;
   width: 20px;
   height: 20px;
-  transform-style: preserve-3d;
-  will-change: transform;
 }
 
-.sidebar-dot {
-  flex: none;
-  width: 5px;
-  height: 5px;
-  margin-right: 2px;
-  border-radius: 999px;
-  background: var(--ink);
-  opacity: 0.72;
-}
-
-.sidebar-shell[data-state="collapsed"] .sidebar-menu-button {
-  justify-content: center;
-  gap: 0;
-  padding-inline: 0;
-}
-
-.sidebar-collapse-arrow {
-  transform-origin: 10.6px 9px;
-  transition: transform 300ms ease;
-}
-
-.sidebar-shell[data-state="collapsed"] .sidebar-collapse-arrow {
-  transform: rotate(180deg);
-}
-
-/* 会滑动的选中玻璃片：静态几何由 GSAP 写，这里只管材质 */
 .nav-indicator {
   position: absolute;
   top: 0;
   left: 0;
   z-index: 0;
-  border-radius: 17px;
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.98) 0%,
-    rgba(246, 246, 248, 0.94) 100%
-  );
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 1),
-    inset 0 -1px 0 rgba(29, 29, 31, 0.05),
-    0 0 0 1px rgba(29, 29, 31, 0.05),
-    0 1px 2px rgba(29, 29, 31, 0.06),
-    0 8px 20px -14px rgba(29, 29, 31, 0.45);
+  border-radius: 14px;
+  background-color: rgba(29, 29, 31, 0.06);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  will-change: transform, width, height;
-}
-
-.nav-indicator::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 5px;
-  width: 3px;
-  height: 15px;
-  border-radius: 2px;
-  background: var(--ink);
-  opacity: 0.72;
-  transform: translateY(-50%);
-  transition: opacity 180ms ease;
-}
-
-.sidebar-shell[data-state="collapsed"] .nav-indicator::before {
-  opacity: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sidebar-label,
-  .sidebar-brand-row,
-  .sidebar-collapse-arrow {
-    transition: none;
-  }
 }

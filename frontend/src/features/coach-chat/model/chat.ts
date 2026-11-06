@@ -1,5 +1,5 @@
 /**
- * 对话领域模型：角色、消息、上下文与输入上限。
+ * 对话领域模型：角色、消息、会话摘要与输入上限。
  * 不含传输、不含存储。
  */
 
@@ -20,10 +20,19 @@ export interface ChatMessage {
   content: string;
   /** 旧会话与用户消息没有这个字段 */
   activities?: ToolActivity[];
+  /** 用户中途停止，正文保留但标记为未完成 */
+  stopped?: boolean;
 }
 
-/** 带上游模型的历史轮数上限 */
-export const MAX_TURNS = 12;
+/** 会话列表里的一行，历史正文仍归服务端 */
+export interface SessionSummary {
+  id: string;
+  name: string | null;
+  createdAt: string;
+  updatedAt: string;
+  messageCount: number;
+  preview: string;
+}
 
 /** 单条输入上限，与后端一致 */
 export const MAX_INPUT = 2000;
@@ -63,7 +72,7 @@ export interface PickerEntry {
   configured: boolean;
 }
 
-export type CustomProviderApi = "openai-completions" | "anthropic-messages";
+export type CustomProviderApi = "openai-completions";
 
 export interface CustomProviderInput {
   id: string;
@@ -77,15 +86,4 @@ export interface ModelCatalog {
   models: ModelOption[];
   credentials: ProviderCredential[];
   defaults: { model: string };
-}
-
-export const SUGGESTIONS = [
-  "这周容量比上周涨了多少",
-  "引体该不该加组",
-  "哪次训练的掉速最明显",
-];
-
-/** 把消息列表裁到最近 MAX_TURNS 条 */
-export function trimTurns(messages: ChatMessage[]): ChatMessage[] {
-  return messages.slice(-MAX_TURNS);
 }
