@@ -16,6 +16,9 @@ backend/.env.*
 # 自定义 provider 端点定义（本机数据，面板写入）
 backend/providers.json
 
+# Agent 会话（Pi JSONL session tree，本机数据）
+backend/.agent-sessions/
+
 # 工作区私有文件与备份
 .workbuddy/
 
